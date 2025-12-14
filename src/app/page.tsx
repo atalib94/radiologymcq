@@ -212,6 +212,8 @@ export default function Home() {
   const [editingNoteContent, setEditingNoteContent] = useState('');
   const [savingEditNote, setSavingEditNote] = useState(false);
   const [quizMode, setQuizMode] = useState<QuizMode>('all');
+  const [quizLimit, setQuizLimit] = useState<number | 'all'>('all');
+  const [quizCompleted, setQuizCompleted] = useState(false);
   
   const supabase = useMemo(() => createClient(), []);
 
@@ -421,14 +423,20 @@ export default function Home() {
       quizQs.sort(() => Math.random() - 0.5);
     }
     
+    // Apply limit
+    if (quizLimit !== 'all' && quizLimit > 0) {
+      quizQs = quizQs.slice(0, quizLimit);
+    }
+    
     setQuizQuestions(quizQs);
     setCurrentQuestionIndex(0);
     setSelectedAnswer(null);
     setShowExplanation(false);
     setShowNotePanel(false);
+    setQuizCompleted(false);
     setCurrentView('practice');
     setSidebarOpen(false);
-  }, [availableQuestions, quizMode, srDataMap]);
+  }, [availableQuestions, quizMode, srDataMap, quizLimit]);
 
   const uploadImage = useCallback(async (file: File): Promise<string | null> => {
     const ext = file.name.split('.').pop();
@@ -836,8 +844,30 @@ export default function Home() {
                     <span className="text-gray-600">Available questions</span>
                     <span className="text-3xl font-bold text-blue-600">{availableQuestions.length}</span>
                   </div>
+                  
+                  {/* Quiz Length Selector */}
+                  <div className="mb-4">
+                    <label className="text-sm font-medium text-gray-700 mb-2 block">Number of questions</label>
+                    <div className="flex flex-wrap gap-2">
+                      {[10, 20, 30, 50, 'all'].map((num) => (
+                        <button
+                          key={num}
+                          onClick={() => setQuizLimit(num as number | 'all')}
+                          disabled={typeof num === 'number' && num > availableQuestions.length}
+                          className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${
+                            quizLimit === num
+                              ? 'bg-blue-600 text-white'
+                              : 'bg-gray-100 text-gray-700 hover:bg-gray-200 disabled:opacity-40 disabled:hover:bg-gray-100'
+                          }`}
+                        >
+                          {num === 'all' ? `All (${availableQuestions.length})` : num}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                  
                   <button onClick={startQuiz} disabled={availableQuestions.length === 0} className="btn-primary w-full flex items-center justify-center gap-2">
-                    <Icons.Play /> Start Quiz
+                    <Icons.Play /> Start Quiz {quizLimit !== 'all' && quizLimit <= availableQuestions.length ? `(${quizLimit} questions)` : ''}
                   </button>
                 </div>
               </div>
@@ -1001,10 +1031,20 @@ export default function Home() {
                         <Icons.ChevronLeft /> <span className="hidden sm:inline">Previous</span>
                       </button>
                       <span className="text-sm text-gray-400 font-medium">{currentQuestionIndex + 1} / {quizQuestions.length}</span>
-                      <button onClick={() => goToQuestion(currentQuestionIndex + 1)} disabled={currentQuestionIndex >= quizQuestions.length - 1} 
-                        className="btn-primary flex items-center gap-1 sm:gap-2">
-                        <span className="hidden sm:inline">Next</span> <Icons.ChevronRight />
-                      </button>
+                      {currentQuestionIndex >= quizQuestions.length - 1 ? (
+                        <button 
+                          onClick={() => setQuizCompleted(true)} 
+                          disabled={!showExplanation}
+                          className="btn-primary flex items-center gap-1 sm:gap-2 !bg-green-600 hover:!bg-green-700"
+                        >
+                          <Icons.Check /> <span className="hidden sm:inline">Finish</span>
+                        </button>
+                      ) : (
+                        <button onClick={() => goToQuestion(currentQuestionIndex + 1)} disabled={currentQuestionIndex >= quizQuestions.length - 1} 
+                          className="btn-primary flex items-center gap-1 sm:gap-2">
+                          <span className="hidden sm:inline">Next</span> <Icons.ChevronRight />
+                        </button>
+                      )}
                     </div>
                     
                     {/* Inline Notes Section */}
@@ -1038,6 +1078,91 @@ export default function Home() {
                   </div>
                 </div>
               )}
+              
+              {/* Quiz Results */}
+              {quizCompleted && (() => {
+                const quizScore = quizQuestions.reduce((acc, q) => {
+                  const p = progress.find(pr => pr.question_id === q.id);
+                  return acc + (p?.answered_correctly ? 1 : 0);
+                }, 0);
+                const percentage = Math.round((quizScore / quizQuestions.length) * 100);
+                const grade = percentage >= 90 ? 'A' : percentage >= 80 ? 'B' : percentage >= 70 ? 'C' : percentage >= 60 ? 'D' : 'F';
+                const gradeColor = percentage >= 70 ? 'text-green-600' : percentage >= 50 ? 'text-amber-600' : 'text-red-600';
+                const gradeBg = percentage >= 70 ? 'bg-green-50' : percentage >= 50 ? 'bg-amber-50' : 'bg-red-50';
+                
+                return (
+                  <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4 animate-fadeIn">
+                    <div className="elevated-card max-w-md w-full p-6 sm:p-8 text-center animate-slideUp">
+                      <div className={`w-24 h-24 ${gradeBg} rounded-full flex items-center justify-center mx-auto mb-6`}>
+                        <span className={`text-5xl font-bold ${gradeColor}`}>{grade}</span>
+                      </div>
+                      
+                      <h2 className="text-2xl font-bold text-gray-800 mb-2">Quiz Complete!</h2>
+                      <p className="text-gray-500 mb-6">Here's how you did</p>
+                      
+                      <div className="grid grid-cols-3 gap-4 mb-6">
+                        <div className="p-3 bg-gray-50 rounded-xl">
+                          <p className="text-2xl font-bold text-gray-800">{quizScore}</p>
+                          <p className="text-xs text-gray-500">Correct</p>
+                        </div>
+                        <div className="p-3 bg-gray-50 rounded-xl">
+                          <p className="text-2xl font-bold text-gray-800">{quizQuestions.length - quizScore}</p>
+                          <p className="text-xs text-gray-500">Wrong</p>
+                        </div>
+                        <div className="p-3 bg-gray-50 rounded-xl">
+                          <p className={`text-2xl font-bold ${gradeColor}`}>{percentage}%</p>
+                          <p className="text-xs text-gray-500">Score</p>
+                        </div>
+                      </div>
+                      
+                      {/* Progress bar */}
+                      <div className="h-3 bg-gray-100 rounded-full overflow-hidden mb-6">
+                        <div 
+                          className={`h-full rounded-full transition-all duration-500 ${percentage >= 70 ? 'bg-green-500' : percentage >= 50 ? 'bg-amber-500' : 'bg-red-500'}`}
+                          style={{ width: `${percentage}%` }}
+                        />
+                      </div>
+                      
+                      {/* Mastery gained this session */}
+                      {(() => {
+                        const newlyMastered = quizQuestions.filter(q => {
+                          const sr = srDataMap.get(q.id);
+                          return sr?.mastered;
+                        }).length;
+                        if (newlyMastered > 0) {
+                          return (
+                            <div className="mb-6 p-3 bg-green-50 rounded-xl">
+                              <p className="text-green-700 font-medium">🏆 {newlyMastered} question{newlyMastered > 1 ? 's' : ''} mastered!</p>
+                            </div>
+                          );
+                        }
+                        return null;
+                      })()}
+                      
+                      <div className="flex gap-3">
+                        <button 
+                          onClick={() => { setQuizCompleted(false); setCurrentView('quiz-setup'); }}
+                          className="btn-secondary flex-1"
+                        >
+                          New Quiz
+                        </button>
+                        <button 
+                          onClick={() => { setQuizCompleted(false); setCurrentView('question-list'); }}
+                          className="btn-secondary flex-1"
+                        >
+                          Review
+                        </button>
+                        <button 
+                          onClick={() => { setQuizCompleted(false); setCurrentView('dashboard'); }}
+                          className="btn-primary flex-1"
+                        >
+                          Done
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })()}
             </>
           )}
 
