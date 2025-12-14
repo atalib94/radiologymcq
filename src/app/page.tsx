@@ -53,8 +53,6 @@ const Icons = {
   Clock: () => <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth={1.5} viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>,
   XCircle: () => <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth={1.5} viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M9.75 9.75l4.5 4.5m0-4.5l-4.5 4.5M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>,
   Refresh: () => <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth={1.5} viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0l3.181 3.183a8.25 8.25 0 0013.803-3.7M4.031 9.865a8.25 8.25 0 0113.803-3.7l3.181 3.182m0-4.991v4.99" /></svg>,
-  Sun: () => <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth={1.5} viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M12 3v2.25m6.364.386l-1.591 1.591M21 12h-2.25m-.386 6.364l-1.591-1.591M12 18.75V21m-4.773-4.227l-1.591 1.591M5.25 12H3m4.227-4.773L5.636 5.636M15.75 12a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0z" /></svg>,
-  Moon: () => <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth={1.5} viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M21.752 15.002A9.718 9.718 0 0118 15.75c-5.385 0-9.75-4.365-9.75-9.75 0-1.33.266-2.597.748-3.752A9.753 9.753 0 003 11.25C3 16.635 7.365 21 12.75 21a9.753 9.753 0 009.002-5.998z" /></svg>,
   Download: () => <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth={1.5} viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M16.5 12L12 16.5m0 0L7.5 12m4.5 4.5V3" /></svg>,
   FileText: () => <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth={1.5} viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m0 12.75h7.5m-7.5 3H12M10.5 2.25H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z" /></svg>,
 };
@@ -218,31 +216,11 @@ export default function Home() {
   const [quizMode, setQuizMode] = useState<QuizMode>('all');
   const [quizLimit, setQuizLimit] = useState<number | 'all'>('all');
   const [quizCompleted, setQuizCompleted] = useState(false);
-  const [darkMode, setDarkMode] = useState(false);
   const [expandedNotes, setExpandedNotes] = useState<Set<string>>(new Set());
   const [showExportModal, setShowExportModal] = useState(false);
   const [exportCategories, setExportCategories] = useState<string[]>([]);
   
   const supabase = useMemo(() => createClient(), []);
-
-  // Dark mode effect
-  useEffect(() => {
-    const saved = localStorage.getItem('darkMode');
-    if (saved !== null) {
-      setDarkMode(JSON.parse(saved));
-    } else if (window.matchMedia('(prefers-color-scheme: dark)').matches) {
-      setDarkMode(true);
-    }
-  }, []);
-
-  useEffect(() => {
-    if (darkMode) {
-      document.documentElement.classList.add('dark');
-    } else {
-      document.documentElement.classList.remove('dark');
-    }
-    localStorage.setItem('darkMode', JSON.stringify(darkMode));
-  }, [darkMode]);
 
   const currentQuestion = quizQuestions[currentQuestionIndex];
   const currentQuestionNote = useMemo(() => currentQuestion ? notes.find(n => n.question_id === currentQuestion.id) || null : null, [notes, currentQuestion]);
@@ -721,32 +699,22 @@ export default function Home() {
             </div>
           </div>
           {/* User info and logout */}
-          <div className="p-4 mx-4 mb-4 border-t border-gray-100 dark:border-gray-700">
+          <div className="p-4 mx-4 mb-4 border-t border-gray-100">
             <div className="flex items-center gap-3 mb-3">
-              <div className="w-8 h-8 rounded-full bg-blue-100 dark:bg-blue-900 flex items-center justify-center text-blue-600 dark:text-blue-400">
+              <div className="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center text-blue-600">
                 <Icons.User />
               </div>
               <div className="flex-1 min-w-0">
-                <p className="text-sm font-medium text-gray-800 dark:text-gray-200 truncate">{user?.user_metadata?.name || 'User'}</p>
+                <p className="text-sm font-medium text-gray-800 truncate">{user?.user_metadata?.name || 'User'}</p>
                 <p className="text-xs text-gray-400 truncate">{user?.email}</p>
               </div>
             </div>
-            <div className="flex gap-2">
-              <button 
-                onClick={() => setDarkMode(!darkMode)} 
-                className="flex-1 flex items-center justify-center gap-2 px-3 py-2 text-sm text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
-                title={darkMode ? 'Light mode' : 'Dark mode'}
-              >
-                {darkMode ? <Icons.Sun /> : <Icons.Moon />}
-                {darkMode ? 'Light' : 'Dark'}
-              </button>
-              <button 
-                onClick={() => signOut()} 
-                className="flex-1 flex items-center justify-center gap-2 px-3 py-2 text-sm text-gray-600 dark:text-gray-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/30 rounded-lg transition-colors"
-              >
-                <Icons.Logout /> Sign out
-              </button>
-            </div>
+            <button 
+              onClick={() => signOut()} 
+              className="w-full flex items-center justify-center gap-2 px-3 py-2 text-sm text-gray-600 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+            >
+              <Icons.Logout /> Sign out
+            </button>
           </div>
         </div>
       </nav>
@@ -1357,7 +1325,7 @@ export default function Home() {
           {currentView === 'notes' && (
             <div className="space-y-6 animate-fadeIn">
               <div className="flex items-center justify-between">
-                <h2 className="text-2xl sm:text-3xl font-bold text-gray-800 dark:text-gray-100">My Notes</h2>
+                <h2 className="text-2xl sm:text-3xl font-bold text-gray-800">My Notes</h2>
                 <button 
                   onClick={() => { setExportCategories([]); setShowExportModal(true); }}
                   className="btn-secondary flex items-center gap-2"
@@ -1396,11 +1364,11 @@ export default function Home() {
               {/* Expand/Collapse All */}
               {filteredNotes.length > 0 && (
                 <div className="flex gap-2">
-                  <button onClick={expandAllNotes} className="text-sm text-blue-600 hover:text-blue-700 dark:text-blue-400">
+                  <button onClick={expandAllNotes} className="text-sm text-blue-600 hover:text-blue-700">
                     Expand all
                   </button>
-                  <span className="text-gray-300 dark:text-gray-600">|</span>
-                  <button onClick={collapseAllNotes} className="text-sm text-gray-500 hover:text-gray-700 dark:text-gray-400">
+                  <span className="text-gray-300">|</span>
+                  <button onClick={collapseAllNotes} className="text-sm text-gray-500 hover:text-gray-700">
                     Collapse all
                   </button>
                 </div>
@@ -1419,19 +1387,19 @@ export default function Home() {
                         {/* Collapsible Header */}
                         <button 
                           onClick={() => toggleNoteExpanded(n.id)}
-                          className="w-full p-4 sm:p-5 flex items-center justify-between text-left hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors"
+                          className="w-full p-4 sm:p-5 flex items-center justify-between text-left hover:bg-gray-50 transition-colors"
                         >
                           <div className="flex-1 min-w-0">
-                            <h3 className="font-semibold text-gray-800 dark:text-gray-100 text-sm sm:text-base truncate">{n.title}</h3>
+                            <h3 className="font-semibold text-gray-800 text-sm sm:text-base truncate">{n.title}</h3>
                             <div className="flex items-center gap-2 mt-1">
                               {n.category && (
-                                <span className="text-xs px-2 py-0.5 bg-blue-50 dark:bg-blue-900/50 text-blue-600 dark:text-blue-400 rounded">
+                                <span className="text-xs px-2 py-0.5 bg-blue-50 text-blue-600 rounded">
                                   {CATEGORY_INFO[n.category as keyof typeof CATEGORY_INFO]?.name || n.category}
                                 </span>
                               )}
                               <span className="text-xs text-gray-400">{new Date(n.updated_at).toLocaleDateString()}</span>
                               {relatedQuestion && (
-                                <span className="text-xs text-purple-500 dark:text-purple-400">• Has question</span>
+                                <span className="text-xs text-purple-500">• Has question</span>
                               )}
                             </div>
                           </div>
@@ -1442,7 +1410,7 @@ export default function Home() {
 
                         {/* Expanded Content */}
                         {isExpanded && (
-                          <div className="border-t border-gray-100 dark:border-gray-700">
+                          <div className="border-t border-gray-100">
                             {editingNoteId === n.id ? (
                               /* Edit Mode */
                               <div className="p-4 sm:p-5">
@@ -1462,12 +1430,12 @@ export default function Home() {
                               <div className="p-4 sm:p-5">
                                 {/* Related Question */}
                                 {relatedQuestion && (
-                                  <div className="mb-4 p-4 bg-blue-50 dark:bg-blue-900/30 rounded-xl border border-blue-100 dark:border-blue-800">
+                                  <div className="mb-4 p-4 bg-blue-50 rounded-xl border border-blue-100">
                                     <div className="flex items-center gap-2 mb-2">
                                       <Icons.FileText />
-                                      <span className="text-sm font-medium text-blue-700 dark:text-blue-300">Related Question</span>
+                                      <span className="text-sm font-medium text-blue-700">Related Question</span>
                                     </div>
-                                    <p className="text-gray-700 dark:text-gray-300 text-sm">{relatedQuestion.question_text}</p>
+                                    <p className="text-gray-700 text-sm">{relatedQuestion.question_text}</p>
                                     {relatedQuestion.options && (
                                       <div className="mt-3 space-y-1">
                                         {Object.entries(relatedQuestion.options).map(([key, value]) => (
@@ -1475,8 +1443,8 @@ export default function Home() {
                                             key={key} 
                                             className={`text-xs px-3 py-1.5 rounded ${
                                               key === relatedQuestion.correct_answer 
-                                                ? 'bg-green-100 dark:bg-green-900/50 text-green-700 dark:text-green-300 font-medium' 
-                                                : 'text-gray-600 dark:text-gray-400'
+                                                ? 'bg-green-100 text-green-700 font-medium' 
+                                                : 'text-gray-600
                                             }`}
                                           >
                                             <span className="font-medium">{key.toUpperCase()}.</span> {value}
@@ -1485,8 +1453,8 @@ export default function Home() {
                                       </div>
                                     )}
                                     {relatedQuestion.explanation && (
-                                      <div className="mt-3 pt-3 border-t border-blue-200 dark:border-blue-700">
-                                        <p className="text-xs text-gray-600 dark:text-gray-400 italic">{relatedQuestion.explanation}</p>
+                                      <div className="mt-3 pt-3 border-t border-blue-200">
+                                        <p className="text-xs text-gray-600 italic">{relatedQuestion.explanation}</p>
                                       </div>
                                     )}
                                   </div>
@@ -1494,18 +1462,18 @@ export default function Home() {
 
                                 {/* Note Content */}
                                 <div 
-                                  className="text-gray-600 dark:text-gray-300 text-sm prose prose-sm max-w-none dark:prose-invert"
+                                  className="text-gray-600 text-sm prose prose-sm max-w-none"
                                   dangerouslySetInnerHTML={{ __html: n.content }}
                                 />
 
                                 {/* Actions */}
-                                <div className="flex items-center gap-2 mt-4 pt-4 border-t border-gray-100 dark:border-gray-700">
+                                <div className="flex items-center gap-2 mt-4 pt-4 border-t border-gray-100">
                                   <button onClick={() => startEditingNote(n)} className="btn-secondary text-sm py-2 px-3 flex items-center gap-1">
                                     <Icons.Edit /> Edit
                                   </button>
                                   <button 
                                     onClick={async () => { if (confirm('Delete this note?')) { await supabase.from('notes').delete().eq('id', n.id); loadData(); }}} 
-                                    className="btn-secondary text-sm py-2 px-3 flex items-center gap-1 text-red-500 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/30"
+                                    className="btn-secondary text-sm py-2 px-3 flex items-center gap-1 text-red-500 hover:text-red-600 hover:bg-red-50"
                                   >
                                     <Icons.Trash /> Delete
                                   </button>
@@ -1524,9 +1492,9 @@ export default function Home() {
               {showExportModal && (
                 <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4 animate-fadeIn">
                   <div className="elevated-card max-w-md w-full p-6 animate-slideUp">
-                    <h3 className="text-lg font-bold text-gray-800 dark:text-gray-100 mb-4">Export Notes to PDF</h3>
+                    <h3 className="text-lg font-bold text-gray-800 mb-4">Export Notes to PDF</h3>
                     
-                    <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
+                    <p className="text-sm text-gray-600 mb-4">
                       Select categories to export, or leave empty to export all notes.
                     </p>
 
@@ -1546,11 +1514,11 @@ export default function Home() {
                             }}
                             className={`w-full p-3 rounded-lg text-left flex items-center justify-between transition-all ${
                               isSelected 
-                                ? 'bg-blue-50 dark:bg-blue-900/50 border-2 border-blue-500' 
-                                : 'bg-gray-50 dark:bg-gray-800 border-2 border-transparent hover:border-gray-200 dark:hover:border-gray-600'
+                                ? 'bg-blue-50 border-2 border-blue-500' 
+                                : 'bg-gray-50 border-2 border-transparent hover:border-gray-200
                             }`}
                           >
-                            <span className="font-medium text-gray-700 dark:text-gray-300">{catName}</span>
+                            <span className="font-medium text-gray-700">{catName}</span>
                             <span className="text-sm text-gray-500">{catNotes.length} notes</span>
                           </button>
                         );
