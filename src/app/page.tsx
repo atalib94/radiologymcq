@@ -391,23 +391,26 @@ export default function Home() {
     );
     
     try {
-      await supabase.from('user_progress').upsert({
-        user_id: user.id,
-        question_id: currentQuestion.id,
-        answered_correctly: isCorrect,
-        user_answer: answer,
-        attempts: (existingProgress?.attempts ?? 0) + 1,
-        last_attempted: new Date().toISOString(),
-        // Spaced repetition fields
-        ease_factor: srData.ease_factor,
-        interval: srData.interval,
-        next_review: srData.next_review,
-        repetitions: srData.repetitions,
-        // Mastery fields
-        correct_streak: srData.correct_streak,
-        total_correct: srData.total_correct,
-        mastered: srData.mastered,
-      });
+      await supabase.from('user_progress').upsert(
+        {
+          user_id: user.id,
+          question_id: currentQuestion.id,
+          answered_correctly: isCorrect,
+          user_answer: answer,
+          attempts: (existingProgress?.attempts ?? 0) + 1,
+          last_attempted: new Date().toISOString(),
+          // Spaced repetition fields
+          ease_factor: srData.ease_factor,
+          interval: srData.interval,
+          next_review: srData.next_review,
+          repetitions: srData.repetitions,
+          // Mastery fields
+          correct_streak: srData.correct_streak,
+          total_correct: srData.total_correct,
+          mastered: srData.mastered,
+        },
+        { onConflict: 'user_id,question_id' }
+      );
       const { data } = await supabase.from('user_progress').select('*').eq('user_id', user.id);
       if (data) setProgress(data);
     } catch (e) { console.error(e); }
