@@ -1,6 +1,8 @@
 'use client';
 import { useState, useEffect, useMemo, useRef, useCallback, memo } from 'react';
 import { createClient } from '@/lib/supabase';
+import { useAuth } from '@/lib/auth-context';
+import AuthForm from './auth-form';
 import { Question, Note, UserProgress, QuestionCategory, Subspecialty, CATEGORY_INFO, SUBSPECIALTY_INFO } from '@/types';
 
 const Icons = {
@@ -26,6 +28,8 @@ const Icons = {
   Edit: () => <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L6.832 19.82a4.5 4.5 0 01-1.897 1.13l-2.685.8.8-2.685a4.5 4.5 0 011.13-1.897L16.863 4.487z" /></svg>,
   ChevronDown: () => <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M19.5 8.25l-7.5 7.5-7.5-7.5" /></svg>,
   ChevronUp: () => <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M4.5 15.75l7.5-7.5 7.5 7.5" /></svg>,
+  Logout: () => <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth={1.5} viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M15.75 9V5.25A2.25 2.25 0 0013.5 3h-6a2.25 2.25 0 00-2.25 2.25v13.5A2.25 2.25 0 007.5 21h6a2.25 2.25 0 002.25-2.25V15M12 9l-3 3m0 0l3 3m-3-3h12.75" /></svg>,
+  User: () => <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth={1.5} viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM4.501 20.118a7.5 7.5 0 0114.998 0A17.933 17.933 0 0112 21.75c-2.676 0-5.216-.584-7.499-1.632z" /></svg>,
 };
 
 const NavButton = memo(({ icon, label, active, onClick }: { icon: React.ReactNode; label: string; active?: boolean; onClick: () => void }) => (
@@ -341,6 +345,7 @@ NoteEditor.displayName = 'NoteEditor';
 type View = 'dashboard' | 'quiz-setup' | 'practice' | 'notes' | 'stats' | 'question-list';
 
 export default function Home() {
+  const { user, loading: authLoading, signOut } = useAuth();
   const [currentView, setCurrentView] = useState<View>('dashboard');
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [questions, setQuestions] = useState<Question[]>([]);
@@ -373,21 +378,38 @@ export default function Home() {
   const supabase = useMemo(() => createClient(), []);
 
   const loadData = useCallback(async () => {
+    if (!user) return;
     setLoading(true);
     try {
       const [qRes, nRes, pRes] = await Promise.all([
         supabase.from('questions').select('*').order('created_at', { ascending: false }),
-        supabase.from('notes').select('*').order('updated_at', { ascending: false }),
-        supabase.from('user_progress').select('*'),
+        supabase.from('notes').select('*').eq('user_id', user.id).order('updated_at', { ascending: false }),
+        supabase.from('user_progress').select('*').eq('user_id', user.id),
       ]);
       if (qRes.data) setQuestions(qRes.data);
       if (nRes.data) setNotes(nRes.data);
       if (pRes.data) setProgress(pRes.data);
     } catch (e) { console.error(e); }
     setLoading(false);
-  }, [supabase]);
+  }, [supabase, user]);
 
-  useEffect(() => { loadData(); }, [loadData]);
+  useEffect(() => { if (user) loadData(); }, [loadData, user]);
+
+  // Show auth form if not logged in
+  if (authLoading) {
+    return (
+      <div className="flex min-h-screen items-center justify-center">
+        <div className="flex flex-col items-center gap-4">
+          <div className="w-10 h-10 border-3 border-blue-500 border-t-transparent rounded-full animate-spin" />
+          <p className="text-gray-500 font-medium">Loading...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!user) {
+    return <AuthForm />;
+  }
 
   const currentQuestion = quizQuestions[currentQuestionIndex];
   const currentQuestionNote = useMemo(() => currentQuestion ? notes.find(n => n.question_id === currentQuestion.id) || null : null, [notes, currentQuestion]);
@@ -456,18 +478,18 @@ export default function Home() {
   }), [questions, selectedCategories, selectedSubspecialties]);
 
   const handleAnswer = useCallback(async (answer: string) => {
-    if (showExplanation || !currentQuestion) return;
+    if (showExplanation || !currentQuestion || !user) return;
     setSelectedAnswer(answer);
     setShowExplanation(true);
     try {
       await supabase.from('user_progress').upsert({
-        user_id: 'default', question_id: currentQuestion.id, answered_correctly: answer === currentQuestion.correct_answer,
+        user_id: user.id, question_id: currentQuestion.id, answered_correctly: answer === currentQuestion.correct_answer,
         user_answer: answer, attempts: 1, last_attempted: new Date().toISOString(),
       });
-      const { data } = await supabase.from('user_progress').select('*');
+      const { data } = await supabase.from('user_progress').select('*').eq('user_id', user.id);
       if (data) setProgress(data);
     } catch (e) { console.error(e); }
-  }, [showExplanation, currentQuestion, supabase]);
+  }, [showExplanation, currentQuestion, supabase, user]);
 
   const goToQuestion = useCallback((i: number) => {
     if (i >= 0 && i < quizQuestions.length) { setCurrentQuestionIndex(i); setSelectedAnswer(null); setShowExplanation(false); }
@@ -514,27 +536,27 @@ export default function Home() {
   }, [uploadImage]);
 
   const saveNote = useCallback(async () => {
-    if (!currentQuestion || (!currentNote.trim() && currentNoteImages.length === 0)) return;
+    if (!currentQuestion || !user || (!currentNote.trim() && currentNoteImages.length === 0)) return;
     setSavingNote(true);
     try {
       if (currentQuestionNote) {
         await supabase.from('notes').update({ content: currentNote, images: currentNoteImages, updated_at: new Date().toISOString() }).eq('id', currentQuestionNote.id);
       } else {
-        await supabase.from('notes').insert({ user_id: 'default', question_id: currentQuestion.id, category: currentQuestion.category, title: `Note: ${currentQuestion.question_text.substring(0, 50)}...`, content: currentNote, images: currentNoteImages });
+        await supabase.from('notes').insert({ user_id: user.id, question_id: currentQuestion.id, category: currentQuestion.category, title: `Note: ${currentQuestion.question_text.substring(0, 50)}...`, content: currentNote, images: currentNoteImages });
       }
-      const { data } = await supabase.from('notes').select('*').order('updated_at', { ascending: false });
+      const { data } = await supabase.from('notes').select('*').eq('user_id', user.id).order('updated_at', { ascending: false });
       if (data) setNotes(data);
     } catch (e) { console.error(e); }
     setSavingNote(false);
-  }, [currentQuestion, currentNote, currentNoteImages, currentQuestionNote, supabase]);
+  }, [currentQuestion, currentNote, currentNoteImages, currentQuestionNote, supabase, user]);
 
   const deleteCurrentNote = useCallback(async () => {
-    if (!currentQuestionNote || !confirm('Delete this note?')) return;
+    if (!currentQuestionNote || !user || !confirm('Delete this note?')) return;
     await supabase.from('notes').delete().eq('id', currentQuestionNote.id);
     setCurrentNote(''); setCurrentNoteImages([]);
-    const { data } = await supabase.from('notes').select('*').order('updated_at', { ascending: false });
+    const { data } = await supabase.from('notes').select('*').eq('user_id', user.id).order('updated_at', { ascending: false });
     if (data) setNotes(data);
-  }, [currentQuestionNote, supabase]);
+  }, [currentQuestionNote, supabase, user]);
 
   const handleNoteChange = useCallback((e: React.ChangeEvent<HTMLTextAreaElement>) => setCurrentNote(e.target.value), []);
   const handleSearchChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => setSearchQuery(e.target.value), []);
@@ -554,7 +576,7 @@ export default function Home() {
   }, []);
 
   const saveEditingNote = useCallback(async () => {
-    if (!editingNoteId) return;
+    if (!editingNoteId || !user) return;
     setSavingEditNote(true);
     try {
       await supabase.from('notes').update({ 
@@ -562,14 +584,14 @@ export default function Home() {
         images: editingNoteImages, 
         updated_at: new Date().toISOString() 
       }).eq('id', editingNoteId);
-      const { data } = await supabase.from('notes').select('*').order('updated_at', { ascending: false });
+      const { data } = await supabase.from('notes').select('*').eq('user_id', user.id).order('updated_at', { ascending: false });
       if (data) setNotes(data);
       setEditingNoteId(null);
       setEditingNoteContent('');
       setEditingNoteImages([]);
     } catch (e) { console.error(e); }
     setSavingEditNote(false);
-  }, [editingNoteId, editingNoteContent, editingNoteImages, supabase]);
+  }, [editingNoteId, editingNoteContent, editingNoteImages, supabase, user]);
 
   const handleEditImageUpload = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
@@ -626,7 +648,7 @@ export default function Home() {
             <NavButton icon={<Icons.Notes />} label="My Notes" active={currentView === 'notes'} onClick={() => { setCurrentView('notes'); setSidebarOpen(false); }} />
             <NavButton icon={<Icons.Chart />} label="Statistics" active={currentView === 'stats'} onClick={() => { setCurrentView('stats'); setSidebarOpen(false); }} />
           </div>
-          <div className="p-4 mx-4 mb-4 rounded-xl bg-gray-50">
+          <div className="p-4 mx-4 mb-2 rounded-xl bg-gray-50">
             <div className="flex items-center justify-between text-sm">
               <span className="text-gray-500">Total Questions</span>
               <span className="font-bold text-gray-800">{questions.length}</span>
@@ -635,6 +657,24 @@ export default function Home() {
               <span className="text-gray-500">Notes Created</span>
               <span className="font-bold text-gray-800">{notes.length}</span>
             </div>
+          </div>
+          {/* User info and logout */}
+          <div className="p-4 mx-4 mb-4 border-t border-gray-100">
+            <div className="flex items-center gap-3 mb-3">
+              <div className="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center text-blue-600">
+                <Icons.User />
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-medium text-gray-800 truncate">{user?.user_metadata?.name || 'User'}</p>
+                <p className="text-xs text-gray-400 truncate">{user?.email}</p>
+              </div>
+            </div>
+            <button 
+              onClick={() => signOut()} 
+              className="w-full flex items-center justify-center gap-2 px-3 py-2 text-sm text-gray-600 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+            >
+              <Icons.Logout /> Sign out
+            </button>
           </div>
         </div>
       </nav>
