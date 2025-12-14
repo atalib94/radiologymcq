@@ -28,23 +28,18 @@ const NavButton = memo(({ icon, label, active, onClick }: { icon: React.ReactNod
 ));
 NavButton.displayName = 'NavButton';
 
-const StatCard = memo(({ label, value, gradient, icon }: { label: string; value: string | number; gradient: string; icon?: React.ReactNode }) => (
-  <div className={`p-5 rounded-2xl ${gradient}`}>
-    <div className="flex items-center justify-between">
-      <div>
-        <p className="text-sm font-medium text-gray-500">{label}</p>
-        <p className="text-3xl font-bold text-gray-800 mt-1">{value}</p>
-      </div>
-      {icon && <div className="text-gray-400">{icon}</div>}
-    </div>
+const StatCard = memo(({ label, value, gradient }: { label: string; value: string | number; gradient: string }) => (
+  <div className={`p-4 sm:p-5 rounded-2xl ${gradient}`}>
+    <p className="text-xs sm:text-sm font-medium text-gray-500">{label}</p>
+    <p className="text-2xl sm:text-3xl font-bold text-gray-800 mt-1">{value}</p>
   </div>
 ));
 StatCard.displayName = 'StatCard';
 
 const Lightbox = memo(({ src, onClose }: { src: string; onClose: () => void }) => (
-  <div className="fixed inset-0 z-[100] bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 animate-fadeIn" onClick={onClose}>
-    <button onClick={onClose} className="absolute top-4 right-4 p-2 text-white/80 hover:text-white hover:bg-white/10 rounded-full transition-colors"><Icons.X /></button>
-    <img src={src} alt="" className="max-w-full max-h-full object-contain rounded-lg shadow-2xl" onClick={e => e.stopPropagation()} />
+  <div className="fixed inset-0 z-[100] bg-black/90 flex items-center justify-center p-4 animate-fadeIn" onClick={onClose}>
+    <button onClick={onClose} className="absolute top-4 right-4 p-2 text-white/80 hover:text-white hover:bg-white/10 rounded-full transition-colors z-10"><Icons.X /></button>
+    <img src={src} alt="" className="max-w-full max-h-full object-contain rounded-lg" onClick={e => e.stopPropagation()} />
   </div>
 ));
 Lightbox.displayName = 'Lightbox';
@@ -276,7 +271,7 @@ export default function Home() {
               </div>
               <div>
                 <h1 className="text-lg font-bold text-gray-800">Diagnostic</h1>
-                <p className="text-xs font-semibold text-blue-600">Excellence</p>
+                <p className="text-sm font-semibold text-blue-600">Excellence</p>
               </div>
             </div>
           </div>
@@ -301,37 +296,38 @@ export default function Home() {
 
       {/* Main content */}
       <main className="flex-1 min-w-0">
-        <header className="sticky top-0 z-30 bg-white/80 backdrop-blur-lg border-b border-gray-100 px-4 lg:px-8 py-4">
-          <div className="flex items-center justify-between">
-            <button onClick={() => setSidebarOpen(true)} className="lg:hidden p-2 hover:bg-gray-100 rounded-xl transition-colors"><Icons.Menu /></button>
+        {/* Header */}
+        <header className="app-header">
+          <div className="flex items-center gap-4">
+            <button onClick={() => setSidebarOpen(true)} className="lg:hidden p-2 hover:bg-gray-100 rounded-xl transition-colors">
+              <Icons.Menu />
+            </button>
             <div className="flex-1" />
-            {currentView === 'practice' && quizQuestions.length > 0 && (
-              <div className="flex items-center gap-2">
-                <span className="px-3 py-1.5 bg-blue-50 text-blue-600 rounded-full text-sm font-medium">
-                  {CATEGORY_INFO[currentQuestion?.category]?.name}
-                </span>
-              </div>
+            {currentView === 'practice' && currentQuestion && (
+              <span className="category-badge">
+                {CATEGORY_INFO[currentQuestion.category]?.name}
+              </span>
             )}
           </div>
         </header>
 
-        <div className="p-4 lg:p-8 max-w-6xl mx-auto">
+        <div className="main-content">
           {/* Dashboard */}
           {currentView === 'dashboard' && (
-            <div className="space-y-8 animate-fadeIn">
+            <div className="space-y-6 sm:space-y-8 animate-fadeIn">
               <div>
-                <h2 className="text-3xl font-bold text-gray-800">Welcome back! 👋</h2>
-                <p className="text-gray-500 mt-1">Continue your RANZCR exam preparation</p>
+                <h2 className="text-2xl sm:text-3xl font-bold text-gray-800">Welcome back! 👋</h2>
+                <p className="text-gray-500 mt-1">Continue your exam preparation</p>
               </div>
               
-              <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+              <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
                 <StatCard label="Total Questions" value={stats.total} gradient="stat-gradient-blue" />
                 <StatCard label="Attempted" value={stats.attempted} gradient="stat-gradient-purple" />
                 <StatCard label="Correct" value={stats.correct} gradient="stat-gradient-green" />
                 <StatCard label="Accuracy" value={`${stats.accuracy}%`} gradient="stat-gradient-amber" />
               </div>
               
-              <div className="elevated-card p-6">
+              <div className="elevated-card p-4 sm:p-6">
                 <h3 className="text-lg font-bold text-gray-800 mb-4">Quick Start</h3>
                 <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-3">
                   {Object.entries(CATEGORY_INFO).map(([key, info]) => {
@@ -366,11 +362,11 @@ export default function Home() {
           {currentView === 'quiz-setup' && (
             <div className="max-w-2xl mx-auto space-y-6 animate-fadeIn">
               <div>
-                <h2 className="text-3xl font-bold text-gray-800">Create Quiz</h2>
+                <h2 className="text-2xl sm:text-3xl font-bold text-gray-800">Create Quiz</h2>
                 <p className="text-gray-500 mt-1">Select topics to practice</p>
               </div>
               
-              <div className="elevated-card p-6 space-y-6">
+              <div className="elevated-card p-4 sm:p-6 space-y-6">
                 <ChipSelect label="Categories" options={categoryOptions.map(o => ({ ...o, label: `${o.label} (${o.count})` }))} selected={selectedCategories} onChange={setSelectedCategories} />
                 {subspecialtyOptions.length > 0 && (
                   <ChipSelect label="Subspecialties" options={subspecialtyOptions.map(o => ({ ...o, label: `${o.label} (${o.count})` }))} selected={selectedSubspecialties} onChange={setSelectedSubspecialties} />
@@ -389,7 +385,7 @@ export default function Home() {
             </div>
           )}
 
-          {/* Practice */}
+          {/* Practice - IMPROVED MOBILE LAYOUT */}
           {currentView === 'practice' && (
             <>
               {quizQuestions.length === 0 ? (
@@ -398,18 +394,23 @@ export default function Home() {
                   <button onClick={() => setCurrentView('quiz-setup')} className="btn-primary">Setup Quiz</button>
                 </div>
               ) : (
-                <div className="flex gap-6 animate-fadeIn">
-                  <div className={`flex-1 ${showNotePanel ? 'max-w-2xl' : 'max-w-3xl mx-auto'}`}>
-                    {/* Progress */}
-                    <div className="mb-6">
-                      <div className="flex items-center justify-between mb-3">
-                        <button onClick={() => setCurrentView('question-list')} className="btn-secondary flex items-center gap-2"><Icons.List /> <span className="hidden sm:inline">All Questions</span></button>
-                        <span className="text-sm font-medium text-gray-500">Question {currentQuestionIndex + 1} of {quizQuestions.length}</span>
-                        <button onClick={() => setShowNotePanel(!showNotePanel)} className={`btn-secondary flex items-center gap-2 ${showNotePanel || currentQuestionNote ? '!bg-blue-50 !text-blue-600' : ''}`}>
-                          <Icons.Notes /> <span className="hidden sm:inline">{currentQuestionNote ? 'View Note' : 'Add Note'}</span>
+                <div className="animate-fadeIn">
+                  <div className={`max-w-3xl mx-auto ${showNotePanel ? 'lg:mr-0 lg:max-w-2xl' : ''}`}>
+                    {/* Progress bar header */}
+                    <div className="mb-4 sm:mb-6">
+                      <div className="flex items-center justify-between gap-2 mb-3">
+                        <button onClick={() => setCurrentView('question-list')} className="btn-secondary text-sm px-3 py-2">
+                          <Icons.List />
+                        </button>
+                        <span className="text-sm font-medium text-gray-500">
+                          Question {currentQuestionIndex + 1} of {quizQuestions.length}
+                        </span>
+                        <button onClick={() => setShowNotePanel(!showNotePanel)} 
+                          className={`btn-secondary text-sm px-3 py-2 ${showNotePanel || currentQuestionNote ? '!bg-blue-50 !text-blue-600' : ''}`}>
+                          <Icons.Notes />
                         </button>
                       </div>
-                      <div className="flex gap-1">
+                      <div className="progress-container">
                         {quizQuestions.map((fq, i) => {
                           const p = progress.find(pr => pr.question_id === fq.id);
                           let bg = 'bg-gray-200';
@@ -421,26 +422,32 @@ export default function Home() {
                     </div>
                     
                     {/* Question Card */}
-                    <div className="quiz-card p-6 lg:p-8 mb-6">
-                      {currentQuestion?.subspecialties?.length > 0 && (
-                        <div className="flex flex-wrap gap-2 mb-4">
+                    <div className="quiz-card p-4 sm:p-6 lg:p-8 mb-4 sm:mb-6">
+                      {currentQuestion?.subspecialties && currentQuestion.subspecialties.length > 0 && (
+                        <div className="flex flex-wrap gap-2 mb-3 sm:mb-4">
                           {currentQuestion.subspecialties.map(sub => (
-                            <span key={sub} className="px-2.5 py-1 bg-gray-100 text-gray-600 rounded-lg text-xs font-medium">{SUBSPECIALTY_INFO[sub]?.name}</span>
+                            <span key={sub} className="subspecialty-badge">{SUBSPECIALTY_INFO[sub]?.name}</span>
                           ))}
                         </div>
                       )}
-                      {currentQuestion?.image_url && <img src={currentQuestion.image_url} alt="" className="w-full max-h-72 object-contain rounded-xl mb-6 bg-gray-50 cursor-pointer" onClick={() => setLightboxImage(currentQuestion.image_url!)} />}
-                      <p className="text-lg text-gray-800 leading-relaxed">{currentQuestion?.question_text}</p>
+                      {currentQuestion?.image_url && (
+                        <img src={currentQuestion.image_url} alt="" 
+                          className="w-full max-h-64 sm:max-h-72 object-contain rounded-xl mb-4 sm:mb-6 bg-gray-50 cursor-pointer" 
+                          onClick={() => setLightboxImage(currentQuestion.image_url!)} />
+                      )}
+                      <p className="question-text">{currentQuestion?.question_text}</p>
                     </div>
                     
-                    {/* Options */}
+                    {/* Options - IMPROVED */}
                     {currentQuestion?.options && (
-                      <div className="space-y-3 mb-6">
+                      <div className="space-y-2 sm:space-y-3 mb-4 sm:mb-6">
                         {Object.entries(currentQuestion.options).map(([k, v]) => (
                           <button key={k} onClick={() => handleAnswer(k)} disabled={showExplanation}
                             className={`option-button ${selectedAnswer === k ? 'selected' : ''} ${showExplanation && k === currentQuestion.correct_answer ? 'correct' : ''} ${showExplanation && selectedAnswer === k && k !== currentQuestion.correct_answer ? 'incorrect' : ''}`}>
-                            <span className={`inline-flex items-center justify-center w-9 h-9 rounded-xl mr-4 font-semibold text-sm transition-colors ${showExplanation && k === currentQuestion.correct_answer ? 'bg-green-500 text-white' : showExplanation && selectedAnswer === k && k !== currentQuestion.correct_answer ? 'bg-red-500 text-white' : 'bg-gray-100 text-gray-600'}`}>{k.toUpperCase()}</span>
-                            <span className="text-gray-700">{v}</span>
+                            <span className={`option-letter ${showExplanation && k === currentQuestion.correct_answer ? '!bg-green-500 !text-white' : ''} ${showExplanation && selectedAnswer === k && k !== currentQuestion.correct_answer ? '!bg-red-500 !text-white' : ''}`}>
+                              {k.toUpperCase()}
+                            </span>
+                            <span className="option-text">{v}</span>
                           </button>
                         ))}
                       </div>
@@ -448,37 +455,49 @@ export default function Home() {
                     
                     {/* Explanation */}
                     {showExplanation && (
-                      <div className="mb-6 animate-slideUp">
-                        <div className={`p-5 rounded-2xl ${selectedAnswer === currentQuestion?.correct_answer ? 'bg-green-50 border border-green-200' : 'bg-red-50 border border-red-200'}`}>
+                      <div className="mb-4 sm:mb-6 animate-slideUp">
+                        <div className={`explanation-box ${selectedAnswer === currentQuestion?.correct_answer ? 'correct' : 'incorrect'}`}>
                           <div className="flex items-center gap-2 mb-2">
                             {selectedAnswer === currentQuestion?.correct_answer ? (
-                              <><span className="w-6 h-6 rounded-full bg-green-500 flex items-center justify-center text-white"><Icons.Check /></span><span className="font-semibold text-green-700">Correct!</span></>
+                              <>
+                                <span className="w-6 h-6 rounded-full bg-green-500 flex items-center justify-center text-white flex-shrink-0"><Icons.Check /></span>
+                                <span className="font-semibold text-green-700">Correct!</span>
+                              </>
                             ) : (
-                              <><span className="w-6 h-6 rounded-full bg-red-500 flex items-center justify-center text-white text-sm">✗</span><span className="font-semibold text-red-700">Incorrect — Answer: {currentQuestion?.correct_answer?.toUpperCase()}</span></>
+                              <>
+                                <span className="w-6 h-6 rounded-full bg-red-500 flex items-center justify-center text-white text-sm flex-shrink-0">✗</span>
+                                <span className="font-semibold text-red-700">Incorrect — Answer: {currentQuestion?.correct_answer?.toUpperCase()}</span>
+                              </>
                             )}
                           </div>
-                          {currentQuestion?.explanation && <p className="text-gray-600 leading-relaxed">{currentQuestion.explanation}</p>}
+                          {currentQuestion?.explanation && <p className="text-gray-600 leading-relaxed text-sm sm:text-base">{currentQuestion.explanation}</p>}
                         </div>
                       </div>
                     )}
                     
                     {/* Navigation */}
-                    <div className="flex items-center justify-between gap-4">
-                      <button onClick={() => goToQuestion(currentQuestionIndex - 1)} disabled={currentQuestionIndex === 0} className="btn-secondary flex items-center gap-2 disabled:opacity-40"><Icons.ChevronLeft /> <span className="hidden sm:inline">Previous</span></button>
+                    <div className="nav-button-group">
+                      <button onClick={() => goToQuestion(currentQuestionIndex - 1)} disabled={currentQuestionIndex === 0} 
+                        className="btn-secondary flex items-center gap-1 sm:gap-2">
+                        <Icons.ChevronLeft /> <span className="hidden sm:inline">Previous</span>
+                      </button>
                       <span className="text-sm text-gray-400 font-medium">{currentQuestionIndex + 1} / {quizQuestions.length}</span>
-                      <button onClick={() => goToQuestion(currentQuestionIndex + 1)} disabled={currentQuestionIndex >= quizQuestions.length - 1} className="btn-primary flex items-center gap-2"><span className="hidden sm:inline">Next</span> <Icons.ChevronRight /></button>
+                      <button onClick={() => goToQuestion(currentQuestionIndex + 1)} disabled={currentQuestionIndex >= quizQuestions.length - 1} 
+                        className="btn-primary flex items-center gap-1 sm:gap-2">
+                        <span className="hidden sm:inline">Next</span> <Icons.ChevronRight />
+                      </button>
                     </div>
                   </div>
                   
                   {/* Note Panel Desktop */}
                   {showNotePanel && (
-                    <div className="w-80 flex-shrink-0 hidden lg:block">
-                      <div className="note-panel sticky top-24 p-5">
+                    <div className="w-80 flex-shrink-0 hidden lg:block fixed right-8 top-24">
+                      <div className="note-panel p-5">
                         <div className="flex items-center justify-between mb-4">
                           <h3 className="font-semibold text-gray-800">Notes</h3>
                           <button onClick={() => setShowNotePanel(false)} className="p-1.5 hover:bg-gray-100 rounded-lg transition-colors text-gray-400"><Icons.X /></button>
                         </div>
-                        <textarea value={currentNote} onChange={handleNoteChange} placeholder="Add your notes here..." className="input-field h-40 resize-none text-sm text-black placeholder:text-gray-400" />
+                        <textarea value={currentNote} onChange={handleNoteChange} placeholder="Add your notes here..." className="input-field h-40 resize-none text-sm" />
                         <div className="mt-3">
                           <input ref={fileInputRef} type="file" accept="image/*" multiple onChange={handleImageUpload} className="hidden" />
                           <button onClick={() => fileInputRef.current?.click()} disabled={uploadingImage} className="btn-secondary flex items-center gap-2 text-sm w-full justify-center">
@@ -509,7 +528,8 @@ export default function Home() {
               
               {/* Note Panel Mobile */}
               {showNotePanel && quizQuestions.length > 0 && (
-                <div className="lg:hidden fixed inset-x-0 bottom-0 z-50 bottom-sheet p-5 max-h-[70vh] overflow-y-auto animate-slideUp">
+                <div className="lg:hidden fixed inset-x-0 bottom-0 z-50 bottom-sheet p-4 sm:p-5 max-h-[70vh] overflow-y-auto animate-slideInFromBottom safe-area-bottom">
+                  <div className="w-12 h-1 bg-gray-300 rounded-full mx-auto mb-4" />
                   <div className="flex items-center justify-between mb-4">
                     <h3 className="font-semibold text-gray-800">Notes</h3>
                     <button onClick={() => setShowNotePanel(false)} className="p-1.5 hover:bg-gray-100 rounded-lg text-gray-400"><Icons.X /></button>
@@ -519,10 +539,21 @@ export default function Home() {
                     <button onClick={() => fileInputRef.current?.click()} disabled={uploadingImage} className="btn-secondary flex items-center gap-2 text-sm">
                       {uploadingImage ? 'Uploading...' : <><Icons.Image /> Add Images</>}
                     </button>
-                    {currentNoteImages.length > 0 && <div className="flex flex-wrap gap-2 mt-3">{currentNoteImages.map((img, i) => <div key={i} className="relative"><img src={img} alt="" className="w-16 h-16 object-cover rounded-lg cursor-pointer" onClick={() => setLightboxImage(img)} /><button onClick={() => removeNoteImage(i)} className="absolute -top-1.5 -right-1.5 w-5 h-5 bg-red-500 text-white rounded-full text-xs">×</button></div>)}</div>}
+                    {currentNoteImages.length > 0 && (
+                      <div className="flex flex-wrap gap-2 mt-3">
+                        {currentNoteImages.map((img, i) => (
+                          <div key={i} className="relative">
+                            <img src={img} alt="" className="w-16 h-16 object-cover rounded-lg cursor-pointer" onClick={() => setLightboxImage(img)} />
+                            <button onClick={() => removeNoteImage(i)} className="absolute -top-1.5 -right-1.5 w-5 h-5 bg-red-500 text-white rounded-full text-xs">×</button>
+                          </div>
+                        ))}
+                      </div>
+                    )}
                   </div>
                   <div className="flex gap-2 mt-4">
-                    <button onClick={saveNote} disabled={savingNote || (!currentNote.trim() && currentNoteImages.length === 0)} className="btn-primary flex-1 flex items-center justify-center gap-2 text-sm py-2.5"><Icons.Save /> {savingNote ? 'Saving...' : 'Save'}</button>
+                    <button onClick={saveNote} disabled={savingNote || (!currentNote.trim() && currentNoteImages.length === 0)} className="btn-primary flex-1 flex items-center justify-center gap-2 text-sm py-2.5">
+                      <Icons.Save /> {savingNote ? 'Saving...' : 'Save'}
+                    </button>
                     {currentQuestionNote && <button onClick={deleteCurrentNote} className="p-2.5 bg-red-50 text-red-500 rounded-xl"><Icons.Trash /></button>}
                   </div>
                 </div>
@@ -534,7 +565,7 @@ export default function Home() {
           {currentView === 'question-list' && (
             <div className="animate-fadeIn">
               <div className="flex items-center justify-between mb-6">
-                <h2 className="text-2xl font-bold text-gray-800">All Questions</h2>
+                <h2 className="text-xl sm:text-2xl font-bold text-gray-800">All Questions</h2>
                 <button onClick={() => setCurrentView('practice')} className="btn-secondary">Back to Quiz</button>
               </div>
               <div className="grid gap-3">
@@ -545,9 +576,9 @@ export default function Home() {
                     <button key={q.id} onClick={() => { goToQuestion(i); setCurrentView('practice'); }}
                       className={`elevated-card w-full text-left p-4 ${i === currentQuestionIndex ? 'ring-2 ring-blue-500' : ''}`}>
                       <div className="flex items-start gap-3">
-                        <span className={`w-8 h-8 rounded-xl flex items-center justify-center text-sm font-semibold ${p ? p.answered_correctly ? 'bg-green-100 text-green-600' : 'bg-red-100 text-red-600' : 'bg-gray-100 text-gray-500'}`}>{i + 1}</span>
+                        <span className={`w-8 h-8 rounded-xl flex items-center justify-center text-sm font-semibold flex-shrink-0 ${p ? p.answered_correctly ? 'bg-green-100 text-green-600' : 'bg-red-100 text-red-600' : 'bg-gray-100 text-gray-500'}`}>{i + 1}</span>
                         <div className="flex-1 min-w-0">
-                          <p className="text-gray-700 line-clamp-2">{q.question_text}</p>
+                          <p className="text-gray-700 line-clamp-2 text-sm sm:text-base">{q.question_text}</p>
                           {n && <span className="mt-2 inline-block px-2 py-0.5 bg-blue-50 text-blue-600 rounded text-xs font-medium">Has note</span>}
                         </div>
                       </div>
@@ -561,7 +592,7 @@ export default function Home() {
           {/* Notes */}
           {currentView === 'notes' && (
             <div className="space-y-6 animate-fadeIn">
-              <h2 className="text-3xl font-bold text-gray-800">My Notes</h2>
+              <h2 className="text-2xl sm:text-3xl font-bold text-gray-800">My Notes</h2>
               <div className="relative">
                 <input type="text" placeholder="Search notes..." value={searchQuery} onChange={handleSearchChange} className="input-field pl-11" />
                 <div className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400"><Icons.Search /></div>
@@ -571,12 +602,12 @@ export default function Home() {
               ) : (
                 <div className="grid gap-4">
                   {filteredNotes.map(n => (
-                    <div key={n.id} className="elevated-card p-5">
+                    <div key={n.id} className="elevated-card p-4 sm:p-5">
                       <div className="flex justify-between items-start mb-3">
-                        <h3 className="font-semibold text-gray-800">{n.title}</h3>
+                        <h3 className="font-semibold text-gray-800 text-sm sm:text-base">{n.title}</h3>
                         <button onClick={async () => { if (confirm('Delete this note?')) { await supabase.from('notes').delete().eq('id', n.id); loadData(); }}} className="text-gray-300 hover:text-red-500 transition-colors"><Icons.Trash /></button>
                       </div>
-                      <p className="text-gray-600">{n.content}</p>
+                      <p className="text-gray-600 text-sm">{n.content}</p>
                       {n.images && n.images.length > 0 && <div className="flex flex-wrap gap-2 mt-3">{n.images.map((img, i) => <img key={i} src={img} alt="" className="w-16 h-16 object-cover rounded-lg cursor-pointer" onClick={() => setLightboxImage(img)} />)}</div>}
                     </div>
                   ))}
@@ -587,16 +618,16 @@ export default function Home() {
 
           {/* Stats */}
           {currentView === 'stats' && (
-            <div className="space-y-8 animate-fadeIn">
-              <h2 className="text-3xl font-bold text-gray-800">Statistics</h2>
-              <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+            <div className="space-y-6 sm:space-y-8 animate-fadeIn">
+              <h2 className="text-2xl sm:text-3xl font-bold text-gray-800">Statistics</h2>
+              <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
                 <StatCard label="Total Questions" value={stats.total} gradient="stat-gradient-blue" />
                 <StatCard label="Attempted" value={stats.attempted} gradient="stat-gradient-purple" />
                 <StatCard label="Correct" value={stats.correct} gradient="stat-gradient-green" />
                 <StatCard label="Accuracy" value={`${stats.accuracy}%`} gradient="stat-gradient-amber" />
               </div>
               
-              <div className="elevated-card p-6">
+              <div className="elevated-card p-4 sm:p-6">
                 <h3 className="text-lg font-bold text-gray-800 mb-4">Performance by Category</h3>
                 <div className="space-y-4">
                   {Object.entries(CATEGORY_INFO).map(([cat, info]) => {
@@ -607,7 +638,7 @@ export default function Home() {
                     return (
                       <div key={cat}>
                         <div className="flex justify-between items-center mb-2">
-                          <span className="font-medium text-gray-700">{info.name}</span>
+                          <span className="font-medium text-gray-700 text-sm sm:text-base">{info.name}</span>
                           <span className={`font-bold ${acc >= 70 ? 'text-green-600' : acc >= 50 ? 'text-amber-600' : cs.attempted ? 'text-red-600' : 'text-gray-400'}`}>
                             {cs.attempted ? `${acc}%` : '—'}
                           </span>
@@ -623,7 +654,7 @@ export default function Home() {
               </div>
 
               {Object.keys(stats.bySubspecialty).length > 0 && (
-                <div className="elevated-card p-6">
+                <div className="elevated-card p-4 sm:p-6">
                   <h3 className="text-lg font-bold text-gray-800 mb-4">Performance by Subspecialty</h3>
                   <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-3">
                     {Object.entries(SUBSPECIALTY_INFO).map(([sub, info]) => {
@@ -633,7 +664,7 @@ export default function Home() {
                       return (
                         <div key={sub} className="p-4 bg-gray-50 rounded-xl">
                           <div className="flex justify-between items-center">
-                            <span className="font-medium text-gray-700">{info.name}</span>
+                            <span className="font-medium text-gray-700 text-sm">{info.name}</span>
                             <span className={`font-bold ${acc >= 70 ? 'text-green-600' : acc >= 50 ? 'text-amber-600' : 'text-red-600'}`}>{acc}%</span>
                           </div>
                           <p className="text-xs text-gray-400 mt-1">{ss.correct}/{ss.attempted} correct</p>
