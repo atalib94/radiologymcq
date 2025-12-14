@@ -271,12 +271,12 @@ export default function Home() {
         <div className="flex flex-col h-full">
           <div className="p-6">
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center text-white">
+              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center text-white">
                 <Icons.Sparkles />
               </div>
               <div>
-                <h1 className="text-xl font-bold text-gray-800">RANZCR</h1>
-                <p className="text-xs text-gray-500">Exam Preparation</p>
+                <h1 className="text-lg font-bold text-gray-800">Diagnostic</h1>
+                <p className="text-xs font-semibold text-blue-600">Excellence</p>
               </div>
             </div>
           </div>
