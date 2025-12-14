@@ -377,6 +377,9 @@ export default function Home() {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const supabase = useMemo(() => createClient(), []);
 
+  const currentQuestion = quizQuestions[currentQuestionIndex];
+  const currentQuestionNote = useMemo(() => currentQuestion ? notes.find(n => n.question_id === currentQuestion.id) || null : null, [notes, currentQuestion]);
+
   const loadData = useCallback(async () => {
     if (!user) return;
     setLoading(true);
@@ -394,25 +397,6 @@ export default function Home() {
   }, [supabase, user]);
 
   useEffect(() => { if (user) loadData(); }, [loadData, user]);
-
-  // Show auth form if not logged in
-  if (authLoading) {
-    return (
-      <div className="flex min-h-screen items-center justify-center">
-        <div className="flex flex-col items-center gap-4">
-          <div className="w-10 h-10 border-3 border-blue-500 border-t-transparent rounded-full animate-spin" />
-          <p className="text-gray-500 font-medium">Loading...</p>
-        </div>
-      </div>
-    );
-  }
-
-  if (!user) {
-    return <AuthForm />;
-  }
-
-  const currentQuestion = quizQuestions[currentQuestionIndex];
-  const currentQuestionNote = useMemo(() => currentQuestion ? notes.find(n => n.question_id === currentQuestion.id) || null : null, [notes, currentQuestion]);
 
   useEffect(() => {
     setCurrentNote(currentQuestionNote?.content || '');
@@ -614,6 +598,24 @@ export default function Home() {
   const categoryOptions = useMemo(() => Object.entries(CATEGORY_INFO).map(([key, info]) => ({ key, label: info.name, count: questionCounts.byCategory[key] || 0 })), [questionCounts.byCategory]);
   const subspecialtyOptions = useMemo(() => Object.entries(SUBSPECIALTY_INFO).map(([key, info]) => ({ key, label: info.name, count: questionCounts.bySubspecialty[key] || 0 })).filter(opt => (questionCounts.bySubspecialty[opt.key] || 0) > 0), [questionCounts.bySubspecialty]);
 
+  // Auth loading state
+  if (authLoading) {
+    return (
+      <div className="flex min-h-screen items-center justify-center">
+        <div className="flex flex-col items-center gap-4">
+          <div className="w-10 h-10 border-3 border-blue-500 border-t-transparent rounded-full animate-spin" />
+          <p className="text-gray-500 font-medium">Loading...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Not logged in - show auth form
+  if (!user) {
+    return <AuthForm />;
+  }
+
+  // Data loading state
   if (loading) {
     return (
       <div className="flex min-h-screen items-center justify-center">
