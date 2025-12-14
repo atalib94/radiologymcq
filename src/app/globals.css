@@ -504,3 +504,146 @@ body {
   border-color: #fde047;
   background: #fef9c3;
 }
+
+/* Rich Text Editor / Prose Styles */
+.prose {
+  color: var(--text-primary);
+}
+
+.prose p {
+  margin: 0.5em 0;
+}
+
+.prose h1, .prose h2, .prose h3 {
+  font-weight: 600;
+  margin: 1em 0 0.5em;
+  color: var(--text-primary);
+}
+
+.prose h1 { font-size: 1.5em; }
+.prose h2 { font-size: 1.25em; }
+.prose h3 { font-size: 1.1em; }
+
+.prose ul, .prose ol {
+  padding-left: 1.5em;
+  margin: 0.5em 0;
+}
+
+.prose ul {
+  list-style-type: disc;
+}
+
+.prose ol {
+  list-style-type: decimal;
+}
+
+.prose li {
+  margin: 0.25em 0;
+}
+
+.prose strong {
+  font-weight: 600;
+}
+
+.prose em {
+  font-style: italic;
+}
+
+.prose u {
+  text-decoration: underline;
+}
+
+.prose img {
+  display: inline-block;
+  max-width: 100%;
+  height: auto;
+  margin: 0.5em 0;
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+.prose img:hover {
+  box-shadow: 0 0 0 2px var(--accent);
+}
+
+.prose mark {
+  border-radius: 0.25em;
+  padding: 0.1em 0.2em;
+}
+
+.prose a {
+  color: var(--accent);
+  text-decoration: underline;
+}
+
+.prose blockquote {
+  border-left: 3px solid var(--border);
+  padding-left: 1em;
+  margin: 1em 0;
+  color: var(--text-secondary);
+}
+
+.prose code {
+  background: #f1f5f9;
+  padding: 0.2em 0.4em;
+  border-radius: 4px;
+  font-size: 0.9em;
+}
+
+.prose pre {
+  background: #1e293b;
+  color: #e2e8f0;
+  padding: 1em;
+  border-radius: var(--radius-md);
+  overflow-x: auto;
+}
+
+.prose pre code {
+  background: transparent;
+  padding: 0;
+}
+
+/* Tiptap specific */
+.ProseMirror {
+  outline: none;
+  min-height: 150px;
+}
+
+.ProseMirror p.is-editor-empty:first-child::before {
+  content: attr(data-placeholder);
+  float: left;
+  color: #9ca3af;
+  pointer-events: none;
+  height: 0;
+}
+
+.ProseMirror-focused {
+  outline: none;
+}
+
+/* Rich text editor container */
+.rich-text-editor {
+  background: white;
+}
+
+.rich-text-editor .ProseMirror {
+  padding: 0;
+}
+
+/* Bubble menu styling */
+.tippy-box[data-theme~='dark'] {
+  background-color: #1f2937;
+  border-radius: 8px;
+}
+
+.tippy-box[data-theme~='dark'] .tippy-content {
+  padding: 4px;
+}
+
+/* Line clamp for note previews */
+.line-clamp-3 {
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
