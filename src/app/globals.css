@@ -482,3 +482,35 @@ body {
     height: 3px;
   }
 }
+
+/* Note Box - Yellow styling */
+.note-box {
+  background: linear-gradient(135deg, #fef9c3 0%, #fef3c7 100%);
+  border: 2px solid #fbbf24;
+  border-radius: var(--radius-lg);
+  padding: 16px;
+  box-shadow: 0 2px 8px rgba(251, 191, 36, 0.15);
+}
+
+.note-box-preview {
+  background: linear-gradient(135deg, #fef9c3 0%, #fef3c7 100%);
+  border: 2px solid #fbbf24;
+  border-radius: var(--radius-lg);
+  padding: 12px 16px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.note-box-preview:hover {
+  border-color: #f59e0b;
+  box-shadow: 0 4px 12px rgba(251, 191, 36, 0.25);
+}
+
+/* Formatting toolbar buttons */
+.note-box button {
+  color: #92400e;
+}
+
+.note-box button:hover {
+  color: #78350f;
+}
