@@ -1,9 +1,16 @@
 'use client';
 import { useState, useEffect, useMemo, useRef, useCallback, memo } from 'react';
+import dynamic from 'next/dynamic';
 import { createClient } from '@/lib/supabase';
 import { useAuth } from '@/lib/auth-context';
 import AuthForm from './auth-form';
 import { Question, Note, UserProgress, QuestionCategory, Subspecialty, CATEGORY_INFO, SUBSPECIALTY_INFO } from '@/types';
+
+// Dynamic import for RichTextEditor (client-side only to avoid SSR issues with Tiptap)
+const RichTextEditor = dynamic(() => import('@/components/RichTextEditor'), { 
+  ssr: false,
+  loading: () => <div className="h-48 bg-gray-100 rounded-xl animate-pulse" />
+});
 
 const Icons = {
   Menu: () => <svg className="w-6 h-6" fill="none" stroke="currentColor" strokeWidth={1.5} viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25h16.5" /></svg>,
@@ -85,142 +92,32 @@ const ChipSelect = memo(({ options, selected, onChange, label }: {
 ChipSelect.displayName = 'ChipSelect';
 
 // Improved Note Editor with paste support, resizable images, and subtle styling
+// WYSIWYG Note Editor using Tiptap
 const NoteEditor = memo(({ 
   content, 
   onChange, 
-  images, 
-  onImageAdd, 
-  onImageRemove,
   onSave,
   onDelete,
   onCancel,
   saving,
-  uploading,
   hasExistingNote,
-  fileInputRef,
-  onImageClick,
-  onImagePaste,
+  onImageUpload,
   title,
   showHeader = true,
   className = ''
 }: {
   content: string;
   onChange: (content: string) => void;
-  images: string[];
-  onImageAdd: (e: React.ChangeEvent<HTMLInputElement>) => void;
-  onImageRemove: (index: number) => void;
   onSave: () => void;
   onDelete?: () => void;
   onCancel?: () => void;
   saving: boolean;
-  uploading: boolean;
   hasExistingNote: boolean;
-  fileInputRef: React.MutableRefObject<HTMLInputElement | null>;
-  onImageClick: (src: string) => void;
-  onImagePaste: (file: File) => void;
+  onImageUpload: (file: File) => Promise<string | null>;
   title?: string;
   showHeader?: boolean;
   className?: string;
 }) => {
-  const textareaRef = useRef<HTMLTextAreaElement>(null);
-  const [showColorPicker, setShowColorPicker] = useState(false);
-  const [imagesSizes, setImagesSizes] = useState<Record<number, 'small' | 'medium' | 'large'>>({});
-  
-  const colors = [
-    { name: 'Red', value: 'red', bg: 'bg-red-500' },
-    { name: 'Orange', value: 'orange', bg: 'bg-orange-500' },
-    { name: 'Green', value: 'green', bg: 'bg-green-500' },
-    { name: 'Blue', value: 'blue', bg: 'bg-blue-500' },
-    { name: 'Purple', value: 'purple', bg: 'bg-purple-500' },
-  ];
-
-  const sizeClasses = {
-    small: 'w-16 h-16',
-    medium: 'w-32 h-32',
-    large: 'w-48 h-48'
-  };
-
-  // Handle paste for images
-  const handlePaste = useCallback((e: React.ClipboardEvent) => {
-    const items = e.clipboardData?.items;
-    if (!items) return;
-    
-    for (let i = 0; i < items.length; i++) {
-      if (items[i].type.indexOf('image') !== -1) {
-        e.preventDefault();
-        const file = items[i].getAsFile();
-        if (file) {
-          onImagePaste(file);
-        }
-        return;
-      }
-    }
-  }, [onImagePaste]);
-
-  const insertFormatting = (prefix: string, suffix: string = '') => {
-    const textarea = textareaRef.current;
-    if (!textarea) return;
-    
-    const start = textarea.selectionStart;
-    const end = textarea.selectionEnd;
-    const selectedText = content.substring(start, end);
-    const newText = content.substring(0, start) + prefix + selectedText + suffix + content.substring(end);
-    onChange(newText);
-    
-    setTimeout(() => {
-      textarea.focus();
-      textarea.setSelectionRange(start + prefix.length, end + prefix.length);
-    }, 0);
-  };
-
-  const insertBullet = () => {
-    const textarea = textareaRef.current;
-    if (!textarea) return;
-    
-    const start = textarea.selectionStart;
-    const beforeCursor = content.substring(0, start);
-    const afterCursor = content.substring(start);
-    
-    const lastNewline = beforeCursor.lastIndexOf('\n');
-    const currentLineBeforeCursor = beforeCursor.substring(lastNewline + 1);
-    
-    let newText;
-    if (currentLineBeforeCursor.length === 0 || beforeCursor.endsWith('\n')) {
-      newText = beforeCursor + '• ' + afterCursor;
-    } else {
-      newText = beforeCursor + '\n• ' + afterCursor;
-    }
-    onChange(newText);
-    
-    setTimeout(() => {
-      textarea.focus();
-      const newPos = beforeCursor.length + (currentLineBeforeCursor.length === 0 ? 2 : 3);
-      textarea.setSelectionRange(newPos, newPos);
-    }, 0);
-  };
-
-  const insertColor = (colorValue: string) => {
-    const textarea = textareaRef.current;
-    if (!textarea) return;
-    
-    const start = textarea.selectionStart;
-    const end = textarea.selectionEnd;
-    const selectedText = content.substring(start, end);
-    
-    const newText = content.substring(0, start) + `[${colorValue}]` + selectedText + `[/${colorValue}]` + content.substring(end);
-    onChange(newText);
-    setShowColorPicker(false);
-    
-    setTimeout(() => textarea.focus(), 0);
-  };
-
-  const cycleImageSize = (index: number) => {
-    const currentSize = imagesSizes[index] || 'medium';
-    const sizes: ('small' | 'medium' | 'large')[] = ['small', 'medium', 'large'];
-    const nextIndex = (sizes.indexOf(currentSize) + 1) % sizes.length;
-    setImagesSizes(prev => ({ ...prev, [index]: sizes[nextIndex] }));
-  };
-
   return (
     <div className={`note-box ${className}`}>
       {showHeader && (
@@ -242,83 +139,14 @@ const NoteEditor = memo(({
         </div>
       )}
       
-      {/* Formatting Toolbar - Subtle */}
-      <div className="flex flex-wrap items-center gap-0.5 mb-2 p-1.5 bg-gray-50 border border-gray-200 rounded-lg">
-        <button onClick={insertBullet} className="p-1.5 text-gray-500 hover:text-gray-700 hover:bg-gray-200 rounded transition-colors" title="Bullet point">
-          <Icons.BulletList />
-        </button>
-        <button onClick={() => insertFormatting('**', '**')} className="p-1.5 text-gray-500 hover:text-gray-700 hover:bg-gray-200 rounded transition-colors" title="Bold">
-          <Icons.Bold />
-        </button>
-        <button onClick={() => insertFormatting('_', '_')} className="p-1.5 text-gray-500 hover:text-gray-700 hover:bg-gray-200 rounded transition-colors" title="Italic">
-          <Icons.Italic />
-        </button>
-        <div className="w-px h-5 bg-gray-300 mx-1" />
-        <div className="relative">
-          <button onClick={() => setShowColorPicker(!showColorPicker)} className="p-1.5 text-gray-500 hover:text-gray-700 hover:bg-gray-200 rounded transition-colors flex items-center gap-0.5" title="Text color">
-            <Icons.Highlight />
-            <Icons.ChevronDown />
-          </button>
-          {showColorPicker && (
-            <div className="absolute top-full left-0 mt-1 p-2 bg-white rounded-lg shadow-lg border border-gray-200 flex gap-1.5 z-10">
-              {colors.map(color => (
-                <button
-                  key={color.name}
-                  onClick={() => insertColor(color.value)}
-                  className={`w-6 h-6 rounded-full ${color.bg} hover:scale-110 transition-transform`}
-                  title={color.name}
-                />
-              ))}
-            </div>
-          )}
-        </div>
-        <div className="flex-1" />
-        <span className="text-xs text-gray-400 mr-2 hidden sm:inline">Ctrl+V to paste image</span>
-        <button onClick={() => fileInputRef.current?.click()} disabled={uploading} className="p-1.5 text-gray-500 hover:text-gray-700 hover:bg-gray-200 rounded transition-colors" title="Add image">
-          {uploading ? <span className="w-4 h-4 border-2 border-gray-400 border-t-transparent rounded-full animate-spin inline-block" /> : <Icons.Image />}
-        </button>
-      </div>
-      
-      {/* Resizable Textarea */}
-      <textarea
-        ref={textareaRef}
-        value={content}
-        onChange={e => onChange(e.target.value)}
-        onPaste={handlePaste}
-        placeholder="Add your study notes here...&#10;&#10;• Use toolbar for formatting&#10;• Paste images with Ctrl+V&#10;• Drag corner to resize"
-        className="w-full p-3 bg-white border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent min-h-[120px] resize-y"
+      {/* Rich Text Editor */}
+      <RichTextEditor
+        content={content}
+        onChange={onChange}
+        onImageUpload={onImageUpload}
+        placeholder="Start typing your notes... Paste formatted text or images with Ctrl+V"
+        minHeight="150px"
       />
-      
-      {/* Images with resize option */}
-      {images.length > 0 && (
-        <div className="flex flex-wrap gap-3 mt-3 p-3 bg-gray-50 rounded-lg">
-          {images.map((img, i) => (
-            <div key={i} className="relative group">
-              <img 
-                src={img} 
-                alt="" 
-                className={`${sizeClasses[imagesSizes[i] || 'medium']} object-cover rounded-lg cursor-pointer border border-gray-200 transition-all hover:border-blue-400`} 
-                onClick={() => onImageClick(img)} 
-              />
-              <div className="absolute top-1 right-1 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                <button 
-                  onClick={(e) => { e.stopPropagation(); cycleImageSize(i); }} 
-                  className="w-6 h-6 bg-white/90 hover:bg-white text-gray-600 rounded shadow-sm flex items-center justify-center text-xs font-medium"
-                  title="Resize"
-                >
-                  ↔
-                </button>
-                <button 
-                  onClick={(e) => { e.stopPropagation(); onImageRemove(i); }} 
-                  className="w-6 h-6 bg-red-500 hover:bg-red-600 text-white rounded shadow-sm flex items-center justify-center"
-                >
-                  ×
-                </button>
-              </div>
-            </div>
-          ))}
-        </div>
-      )}
       
       {/* Action Buttons */}
       <div className="flex justify-end mt-3 gap-2">
@@ -329,14 +157,12 @@ const NoteEditor = memo(({
         )}
         <button 
           onClick={onSave} 
-          disabled={saving || (!content.trim() && images.length === 0)}
+          disabled={saving || !content.trim() || content === '<p></p>'}
           className="btn-primary text-sm py-2 px-4 flex items-center gap-2"
         >
           <Icons.Save /> {saving ? 'Saving...' : 'Save'}
         </button>
       </div>
-      
-      <input ref={fileInputRef} type="file" accept="image/*" multiple onChange={onImageAdd} className="hidden" />
     </div>
   );
 });
@@ -360,21 +186,15 @@ export default function Home() {
   const [showExplanation, setShowExplanation] = useState(false);
   const [showNotePanel, setShowNotePanel] = useState(false);
   const [currentNote, setCurrentNote] = useState('');
-  const [currentNoteImages, setCurrentNoteImages] = useState<string[]>([]);
   const [savingNote, setSavingNote] = useState(false);
-  const [uploadingImage, setUploadingImage] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [lightboxImage, setLightboxImage] = useState<string | null>(null);
   const [noteSortBy, setNoteSortBy] = useState<'date' | 'category' | 'title'>('date');
   const [noteSortOrder, setNoteSortOrder] = useState<'asc' | 'desc'>('desc');
   const [editingNoteId, setEditingNoteId] = useState<string | null>(null);
   const [editingNoteContent, setEditingNoteContent] = useState('');
-  const [editingNoteImages, setEditingNoteImages] = useState<string[]>([]);
   const [savingEditNote, setSavingEditNote] = useState(false);
   
-  const editFileInputRef = useRef<HTMLInputElement>(null);
-  
-  const fileInputRef = useRef<HTMLInputElement>(null);
   const supabase = useMemo(() => createClient(), []);
 
   const currentQuestion = quizQuestions[currentQuestionIndex];
@@ -400,7 +220,6 @@ export default function Home() {
 
   useEffect(() => {
     setCurrentNote(currentQuestionNote?.content || '');
-    setCurrentNoteImages(currentQuestionNote?.images || []);
   }, [currentQuestionNote]);
 
   const filteredNotes = useMemo(() => {
@@ -498,65 +317,40 @@ export default function Home() {
     return supabase.storage.from('note-images').getPublicUrl(name).data.publicUrl;
   }, [supabase]);
 
-  const handleImageUpload = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const files = e.target.files;
-    if (!files) return;
-    setUploadingImage(true);
-    const urls: string[] = [];
-    for (let i = 0; i < files.length; i++) { const url = await uploadImage(files[i]); if (url) urls.push(url); }
-    setCurrentNoteImages(prev => [...prev, ...urls]);
-    setUploadingImage(false);
-    if (fileInputRef.current) fileInputRef.current.value = '';
-  }, [uploadImage]);
-
-  // Handle pasted images (Ctrl+V)
-  const handleImagePaste = useCallback(async (file: File) => {
-    setUploadingImage(true);
-    const url = await uploadImage(file);
-    if (url) {
-      setCurrentNoteImages(prev => [...prev, url]);
-    }
-    setUploadingImage(false);
-  }, [uploadImage]);
-
   const saveNote = useCallback(async () => {
-    if (!currentQuestion || !user || (!currentNote.trim() && currentNoteImages.length === 0)) return;
+    if (!currentQuestion || !user || !currentNote.trim() || currentNote === '<p></p>') return;
     setSavingNote(true);
     try {
       if (currentQuestionNote) {
-        await supabase.from('notes').update({ content: currentNote, images: currentNoteImages, updated_at: new Date().toISOString() }).eq('id', currentQuestionNote.id);
+        await supabase.from('notes').update({ content: currentNote, updated_at: new Date().toISOString() }).eq('id', currentQuestionNote.id);
       } else {
-        await supabase.from('notes').insert({ user_id: user.id, question_id: currentQuestion.id, category: currentQuestion.category, title: `Note: ${currentQuestion.question_text.substring(0, 50)}...`, content: currentNote, images: currentNoteImages });
+        await supabase.from('notes').insert({ user_id: user.id, question_id: currentQuestion.id, category: currentQuestion.category, title: `Note: ${currentQuestion.question_text.substring(0, 50)}...`, content: currentNote });
       }
       const { data } = await supabase.from('notes').select('*').eq('user_id', user.id).order('updated_at', { ascending: false });
       if (data) setNotes(data);
     } catch (e) { console.error(e); }
     setSavingNote(false);
-  }, [currentQuestion, currentNote, currentNoteImages, currentQuestionNote, supabase, user]);
+  }, [currentQuestion, currentNote, currentQuestionNote, supabase, user]);
 
   const deleteCurrentNote = useCallback(async () => {
     if (!currentQuestionNote || !user || !confirm('Delete this note?')) return;
     await supabase.from('notes').delete().eq('id', currentQuestionNote.id);
-    setCurrentNote(''); setCurrentNoteImages([]);
+    setCurrentNote('');
     const { data } = await supabase.from('notes').select('*').eq('user_id', user.id).order('updated_at', { ascending: false });
     if (data) setNotes(data);
   }, [currentQuestionNote, supabase, user]);
 
-  const handleNoteChange = useCallback((e: React.ChangeEvent<HTMLTextAreaElement>) => setCurrentNote(e.target.value), []);
   const handleSearchChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => setSearchQuery(e.target.value), []);
-  const removeNoteImage = useCallback((index: number) => setCurrentNoteImages(prev => prev.filter((_, i) => i !== index)), []);
 
   // Note editing in overview
   const startEditingNote = useCallback((note: Note) => {
     setEditingNoteId(note.id);
     setEditingNoteContent(note.content);
-    setEditingNoteImages(note.images || []);
   }, []);
 
   const cancelEditingNote = useCallback(() => {
     setEditingNoteId(null);
     setEditingNoteContent('');
-    setEditingNoteImages([]);
   }, []);
 
   const saveEditingNote = useCallback(async () => {
@@ -565,35 +359,15 @@ export default function Home() {
     try {
       await supabase.from('notes').update({ 
         content: editingNoteContent, 
-        images: editingNoteImages, 
         updated_at: new Date().toISOString() 
       }).eq('id', editingNoteId);
       const { data } = await supabase.from('notes').select('*').eq('user_id', user.id).order('updated_at', { ascending: false });
       if (data) setNotes(data);
       setEditingNoteId(null);
       setEditingNoteContent('');
-      setEditingNoteImages([]);
     } catch (e) { console.error(e); }
     setSavingEditNote(false);
-  }, [editingNoteId, editingNoteContent, editingNoteImages, supabase, user]);
-
-  const handleEditImageUpload = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const files = e.target.files;
-    if (!files) return;
-    const urls: string[] = [];
-    for (let i = 0; i < files.length; i++) { const url = await uploadImage(files[i]); if (url) urls.push(url); }
-    setEditingNoteImages(prev => [...prev, ...urls]);
-    if (editFileInputRef.current) editFileInputRef.current.value = '';
-  }, [uploadImage]);
-
-  const handleEditImagePaste = useCallback(async (file: File) => {
-    const url = await uploadImage(file);
-    if (url) setEditingNoteImages(prev => [...prev, url]);
-  }, [uploadImage]);
-
-  const removeEditNoteImage = useCallback((index: number) => {
-    setEditingNoteImages(prev => prev.filter((_, i) => i !== index));
-  }, []);
+  }, [editingNoteId, editingNoteContent, supabase, user]);
 
   const categoryOptions = useMemo(() => Object.entries(CATEGORY_INFO).map(([key, info]) => ({ key, label: info.name, count: questionCounts.byCategory[key] || 0 })), [questionCounts.byCategory]);
   const subspecialtyOptions = useMemo(() => Object.entries(SUBSPECIALTY_INFO).map(([key, info]) => ({ key, label: info.name, count: questionCounts.bySubspecialty[key] || 0 })).filter(opt => (questionCounts.bySubspecialty[opt.key] || 0) > 0), [questionCounts.bySubspecialty]);
@@ -880,17 +654,11 @@ export default function Home() {
                       <NoteEditor
                         content={currentNote}
                         onChange={setCurrentNote}
-                        images={currentNoteImages}
-                        onImageAdd={handleImageUpload}
-                        onImageRemove={removeNoteImage}
                         onSave={saveNote}
                         onDelete={deleteCurrentNote}
                         saving={savingNote}
-                        uploading={uploadingImage}
                         hasExistingNote={!!currentQuestionNote}
-                        fileInputRef={fileInputRef}
-                        onImageClick={setLightboxImage}
-                        onImagePaste={handleImagePaste}
+                        onImageUpload={uploadImage}
                         className="mt-4"
                       />
                     )}
@@ -903,17 +671,10 @@ export default function Home() {
                           <span className="font-medium text-gray-700">My Notes</span>
                           <span className="text-xs text-gray-400">(tap to edit)</span>
                         </div>
-                        <p className="text-gray-600 text-sm line-clamp-3">{currentQuestionNote.content}</p>
-                        {currentQuestionNote.images && currentQuestionNote.images.length > 0 && (
-                          <div className="flex gap-2 mt-2">
-                            {currentQuestionNote.images.slice(0, 3).map((img, i) => (
-                              <img key={i} src={img} alt="" className="w-12 h-12 object-cover rounded-lg border border-gray-200" />
-                            ))}
-                            {currentQuestionNote.images.length > 3 && (
-                              <span className="w-12 h-12 flex items-center justify-center bg-gray-100 rounded-lg text-gray-500 text-sm font-medium">+{currentQuestionNote.images.length - 3}</span>
-                            )}
-                          </div>
-                        )}
+                        <div 
+                          className="text-gray-600 text-sm line-clamp-3 prose prose-sm max-w-none"
+                          dangerouslySetInnerHTML={{ __html: currentQuestionNote.content }}
+                        />
                       </div>
                     )}
                   </div>
@@ -994,17 +755,11 @@ export default function Home() {
                           <NoteEditor
                             content={editingNoteContent}
                             onChange={setEditingNoteContent}
-                            images={editingNoteImages}
-                            onImageAdd={handleEditImageUpload}
-                            onImageRemove={removeEditNoteImage}
                             onSave={saveEditingNote}
                             onCancel={cancelEditingNote}
                             saving={savingEditNote}
-                            uploading={uploadingImage}
                             hasExistingNote={true}
-                            fileInputRef={editFileInputRef}
-                            onImageClick={setLightboxImage}
-                            onImagePaste={handleEditImagePaste}
+                            onImageUpload={uploadImage}
                             showHeader={false}
                           />
                         </div>
@@ -1030,23 +785,16 @@ export default function Home() {
                               </button>
                             </div>
                           </div>
-                          <p className="text-gray-600 text-sm whitespace-pre-wrap">{n.content}</p>
-                          {n.images && n.images.length > 0 && (
-                            <div className="flex flex-wrap gap-2 mt-3">
-                              {n.images.map((img, i) => (
-                                <img key={i} src={img} alt="" className="w-20 h-20 object-cover rounded-lg cursor-pointer border border-gray-200 hover:border-blue-400 transition-colors" onClick={() => setLightboxImage(img)} />
-                              ))}
-                            </div>
-                          )}
+                          <div 
+                            className="text-gray-600 text-sm prose prose-sm max-w-none"
+                            dangerouslySetInnerHTML={{ __html: n.content }}
+                          />
                         </>
                       )}
                     </div>
                   ))}
                 </div>
               )}
-              
-              {/* Hidden file input for edit mode */}
-              <input ref={editFileInputRef} type="file" accept="image/*" multiple onChange={handleEditImageUpload} className="hidden" />
             </div>
           )}
 
