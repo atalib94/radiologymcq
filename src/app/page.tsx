@@ -89,12 +89,16 @@ const NoteEditor = memo(({
   onImageRemove,
   onSave,
   onDelete,
+  onCancel,
   saving,
   uploading,
   hasExistingNote,
   fileInputRef,
   onImageClick,
-  onImagePaste
+  onImagePaste,
+  title,
+  showHeader = true,
+  className = ''
 }: {
   content: string;
   onChange: (content: string) => void;
@@ -102,13 +106,17 @@ const NoteEditor = memo(({
   onImageAdd: (e: React.ChangeEvent<HTMLInputElement>) => void;
   onImageRemove: (index: number) => void;
   onSave: () => void;
-  onDelete: () => void;
+  onDelete?: () => void;
+  onCancel?: () => void;
   saving: boolean;
   uploading: boolean;
   hasExistingNote: boolean;
   fileInputRef: React.MutableRefObject<HTMLInputElement | null>;
   onImageClick: (src: string) => void;
   onImagePaste: (file: File) => void;
+  title?: string;
+  showHeader?: boolean;
+  className?: string;
 }) => {
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const [showColorPicker, setShowColorPicker] = useState(false);
@@ -210,20 +218,25 @@ const NoteEditor = memo(({
   };
 
   return (
-    <div className="note-box mt-4">
-      <div className="flex items-center justify-between mb-3">
-        <div className="flex items-center gap-2">
-          <Icons.Notes />
-          <span className="font-medium text-gray-700">My Notes</span>
+    <div className={`note-box ${className}`}>
+      {showHeader && (
+        <div className="flex items-center justify-between mb-3">
+          <div className="flex items-center gap-2">
+            <Icons.Notes />
+            <span className="font-medium text-gray-700">{title || 'My Notes'}</span>
+          </div>
+          <div className="flex items-center gap-1">
+            {onCancel && (
+              <button onClick={onCancel} className="text-sm text-gray-400 hover:text-gray-600 mr-2">Cancel</button>
+            )}
+            {hasExistingNote && onDelete && (
+              <button onClick={onDelete} className="p-1.5 text-gray-400 hover:text-red-500 hover:bg-gray-100 rounded-lg transition-colors" title="Delete note">
+                <Icons.Trash />
+              </button>
+            )}
+          </div>
         </div>
-        <div className="flex items-center gap-1">
-          {hasExistingNote && (
-            <button onClick={onDelete} className="p-1.5 text-gray-400 hover:text-red-500 hover:bg-gray-100 rounded-lg transition-colors" title="Delete note">
-              <Icons.Trash />
-            </button>
-          )}
-        </div>
-      </div>
+      )}
       
       {/* Formatting Toolbar - Subtle */}
       <div className="flex flex-wrap items-center gap-0.5 mb-2 p-1.5 bg-gray-50 border border-gray-200 rounded-lg">
@@ -303,12 +316,17 @@ const NoteEditor = memo(({
         </div>
       )}
       
-      {/* Save Button - Subtle */}
+      {/* Action Buttons */}
       <div className="flex justify-end mt-3 gap-2">
+        {onCancel && (
+          <button onClick={onCancel} className="btn-secondary text-sm py-2 px-4">
+            Cancel
+          </button>
+        )}
         <button 
           onClick={onSave} 
           disabled={saving || (!content.trim() && images.length === 0)}
-          className="btn-secondary text-sm py-2 px-4 flex items-center gap-2"
+          className="btn-primary text-sm py-2 px-4 flex items-center gap-2"
         >
           <Icons.Save /> {saving ? 'Saving...' : 'Save'}
         </button>
@@ -831,6 +849,7 @@ export default function Home() {
                         fileInputRef={fileInputRef}
                         onImageClick={setLightboxImage}
                         onImagePaste={handleImagePaste}
+                        className="mt-4"
                       />
                     )}
                     
@@ -927,78 +946,25 @@ export default function Home() {
                   {filteredNotes.map(n => (
                     <div key={n.id} className="elevated-card p-4 sm:p-5">
                       {editingNoteId === n.id ? (
-                        /* Edit Mode */
-                        <div className="space-y-3">
-                          <div className="flex justify-between items-start">
-                            <h3 className="font-semibold text-gray-800 text-sm sm:text-base">{n.title}</h3>
-                            <div className="flex gap-2">
-                              <button onClick={cancelEditingNote} className="text-gray-400 hover:text-gray-600 text-sm">Cancel</button>
-                            </div>
-                          </div>
-                          
-                          {/* Mini toolbar */}
-                          <div className="flex items-center gap-1 p-1.5 bg-gray-50 border border-gray-200 rounded-lg">
-                            <button 
-                              onClick={() => {
-                                const textarea = document.getElementById(`edit-textarea-${n.id}`) as HTMLTextAreaElement;
-                                if (textarea) {
-                                  const start = textarea.selectionStart;
-                                  const before = editingNoteContent.substring(0, start);
-                                  const after = editingNoteContent.substring(start);
-                                  const newLine = before.endsWith('\n') || before.length === 0 ? '' : '\n';
-                                  setEditingNoteContent(before + newLine + '• ' + after);
-                                }
-                              }} 
-                              className="p-1.5 text-gray-500 hover:text-gray-700 hover:bg-gray-200 rounded" 
-                              title="Bullet"
-                            >
-                              <Icons.BulletList />
-                            </button>
-                            <div className="flex-1" />
-                            <span className="text-xs text-gray-400 mr-2 hidden sm:inline">Ctrl+V to paste</span>
-                            <button onClick={() => editFileInputRef.current?.click()} className="p-1.5 text-gray-500 hover:text-gray-700 hover:bg-gray-200 rounded" title="Add image">
-                              <Icons.Image />
-                            </button>
-                          </div>
-                          
-                          <textarea
-                            id={`edit-textarea-${n.id}`}
-                            value={editingNoteContent}
-                            onChange={(e) => setEditingNoteContent(e.target.value)}
-                            onPaste={(e) => {
-                              const items = e.clipboardData?.items;
-                              if (items) {
-                                for (let i = 0; i < items.length; i++) {
-                                  if (items[i].type.indexOf('image') !== -1) {
-                                    e.preventDefault();
-                                    const file = items[i].getAsFile();
-                                    if (file) handleEditImagePaste(file);
-                                    return;
-                                  }
-                                }
-                              }
-                            }}
-                            className="w-full p-3 bg-white border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-400 min-h-[120px] resize-y"
-                            placeholder="Edit your note..."
+                        /* Edit Mode - Using NoteEditor */
+                        <div>
+                          <h3 className="font-semibold text-gray-800 text-sm sm:text-base mb-3">{n.title}</h3>
+                          <NoteEditor
+                            content={editingNoteContent}
+                            onChange={setEditingNoteContent}
+                            images={editingNoteImages}
+                            onImageAdd={handleEditImageUpload}
+                            onImageRemove={removeEditNoteImage}
+                            onSave={saveEditingNote}
+                            onCancel={cancelEditingNote}
+                            saving={savingEditNote}
+                            uploading={uploadingImage}
+                            hasExistingNote={true}
+                            fileInputRef={editFileInputRef}
+                            onImageClick={setLightboxImage}
+                            onImagePaste={handleEditImagePaste}
+                            showHeader={false}
                           />
-                          
-                          {editingNoteImages.length > 0 && (
-                            <div className="flex flex-wrap gap-2 p-3 bg-gray-50 rounded-lg">
-                              {editingNoteImages.map((img, i) => (
-                                <div key={i} className="relative group">
-                                  <img src={img} alt="" className="w-20 h-20 object-cover rounded-lg cursor-pointer border border-gray-200" onClick={() => setLightboxImage(img)} />
-                                  <button onClick={() => removeEditNoteImage(i)} className="absolute -top-2 -right-2 w-5 h-5 bg-red-500 text-white rounded-full text-xs flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">×</button>
-                                </div>
-                              ))}
-                            </div>
-                          )}
-                          
-                          <div className="flex justify-end gap-2">
-                            <button onClick={cancelEditingNote} className="btn-secondary text-sm py-2 px-4">Cancel</button>
-                            <button onClick={saveEditingNote} disabled={savingEditNote} className="btn-primary text-sm py-2 px-4 flex items-center gap-2">
-                              <Icons.Save /> {savingEditNote ? 'Saving...' : 'Save'}
-                            </button>
-                          </div>
                         </div>
                       ) : (
                         /* View Mode */
