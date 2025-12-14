@@ -175,7 +175,7 @@ export default function RichTextEditor({
           if (file) {
             const url = await onImageUpload(file);
             if (url) {
-              editor.chain().focus().setImage({ src: url, width: 400 }).run();
+              editor.chain().focus().setImage({ src: url } as any).run();
             }
           }
           return;
@@ -192,7 +192,7 @@ export default function RichTextEditor({
         event.preventDefault();
         const url = await onImageUpload(file);
         if (url) {
-          editor.chain().focus().setImage({ src: url, width: 400 }).run();
+          editor.chain().focus().setImage({ src: url } as any).run();
         }
       }
     };
@@ -211,7 +211,7 @@ export default function RichTextEditor({
     if (file && editor) {
       onImageUpload(file).then(url => {
         if (url) {
-          editor.chain().focus().setImage({ src: url, width: 400 }).run();
+          editor.chain().focus().setImage({ src: url } as any).run();
         }
       });
     }
