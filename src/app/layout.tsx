@@ -2,13 +2,13 @@ import type { Metadata, Viewport } from "next";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "RANZCR MCQ",
-  description: "RANZCR Radiology Examination Practice",
+  title: "Diagnostic Excellence",
+  description: "Master radiology through practice",
   manifest: "/manifest.json",
   appleWebApp: {
     capable: true,
     statusBarStyle: "black-translucent",
-    title: "RANZCR MCQ",
+    title: "Diagnostic Excellence",
   },
   icons: {
     icon: [
@@ -26,7 +26,7 @@ export const viewport: Viewport = {
   initialScale: 1,
   maximumScale: 1,
   userScalable: false,
-  themeColor: "#0a1929",
+  themeColor: "#ffffff",
 };
 
 export default function RootLayout({
@@ -40,7 +40,7 @@ export default function RootLayout({
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
       </head>
-      <body className="bg-navy-950 text-white min-h-screen">
+      <body className="min-h-screen">
         {children}
       </body>
     </html>
