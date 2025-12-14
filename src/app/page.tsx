@@ -106,7 +106,7 @@ const NoteEditor = memo(({
   saving: boolean;
   uploading: boolean;
   hasExistingNote: boolean;
-  fileInputRef: React.RefObject<HTMLInputElement | null>;
+  fileInputRef: React.RefObject<HTMLInputElement>;
   onImageClick: (src: string) => void;
   onImagePaste: (file: File) => void;
 }) => {
