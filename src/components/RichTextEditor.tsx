@@ -1,12 +1,12 @@
 'use client';
 
-import { useEditor, EditorContent, BubbleMenu } from '@tiptap/react';
+import { useEditor, EditorContent, BubbleMenu, NodeViewWrapper, NodeViewProps, ReactNodeViewRenderer } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
 import Image from '@tiptap/extension-image';
 import Placeholder from '@tiptap/extension-placeholder';
 import Underline from '@tiptap/extension-underline';
 import Highlight from '@tiptap/extension-highlight';
-import { useCallback, useEffect, useRef } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 
 // Icons
 const Icons = {
@@ -20,6 +20,89 @@ const Icons = {
   Undo: () => <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24"><path d="M9 15L3 9m0 0l6-6M3 9h12a6 6 0 010 12h-3" /></svg>,
   Redo: () => <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24"><path d="M15 15l6-6m0 0l-6-6m6 6H9a6 6 0 000 12h3" /></svg>,
 };
+
+// Resizable Image Component
+const ResizableImageComponent = ({ node, updateAttributes, selected }: NodeViewProps) => {
+  const [isResizing, setIsResizing] = useState(false);
+  const imageRef = useRef<HTMLImageElement>(null);
+  const startXRef = useRef(0);
+  const startWidthRef = useRef(0);
+
+  const handleMouseDown = useCallback((e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsResizing(true);
+    startXRef.current = e.clientX;
+    startWidthRef.current = imageRef.current?.offsetWidth || 300;
+  }, []);
+
+  useEffect(() => {
+    if (!isResizing) return;
+
+    const handleMouseMove = (e: MouseEvent) => {
+      const diff = e.clientX - startXRef.current;
+      const newWidth = Math.max(100, Math.min(800, startWidthRef.current + diff));
+      updateAttributes({ width: newWidth });
+    };
+
+    const handleMouseUp = () => {
+      setIsResizing(false);
+    };
+
+    document.addEventListener('mousemove', handleMouseMove);
+    document.addEventListener('mouseup', handleMouseUp);
+
+    return () => {
+      document.removeEventListener('mousemove', handleMouseMove);
+      document.removeEventListener('mouseup', handleMouseUp);
+    };
+  }, [isResizing, updateAttributes]);
+
+  return (
+    <NodeViewWrapper className="resizable-image-wrapper" data-drag-handle>
+      <div className={`resizable-image-container ${selected ? 'selected' : ''}`} style={{ width: node.attrs.width || 'auto' }}>
+        <img
+          ref={imageRef}
+          src={node.attrs.src}
+          alt={node.attrs.alt || ''}
+          style={{ width: '100%', height: 'auto' }}
+          draggable={false}
+        />
+        {/* Resize handles */}
+        <div className="resize-handle resize-handle-right" onMouseDown={handleMouseDown}>
+          <div className="resize-handle-inner" />
+        </div>
+        <div className="resize-handle resize-handle-left" onMouseDown={handleMouseDown}>
+          <div className="resize-handle-inner" />
+        </div>
+        {/* Size indicator */}
+        {(selected || isResizing) && node.attrs.width && (
+          <div className="size-indicator">{Math.round(node.attrs.width)}px</div>
+        )}
+      </div>
+    </NodeViewWrapper>
+  );
+};
+
+// Custom Image Extension with resize support
+const ResizableImage = Image.extend({
+  addAttributes() {
+    return {
+      ...this.parent?.(),
+      width: {
+        default: null,
+        parseHTML: element => element.getAttribute('width') || element.style.width?.replace('px', '') || null,
+        renderHTML: attributes => {
+          if (!attributes.width) return {};
+          return { width: attributes.width, style: `width: ${attributes.width}px` };
+        },
+      },
+    };
+  },
+  addNodeView() {
+    return ReactNodeViewRenderer(ResizableImageComponent);
+  },
+});
 
 interface RichTextEditorProps {
   content: string;
@@ -41,23 +124,14 @@ export default function RichTextEditor({
   const fileInputRef = useRef<HTMLInputElement>(null);
   const isUpdatingRef = useRef(false);
 
-  const handleImageFile = useCallback(async (file: File, editor: any) => {
-    if (!editor) return;
-    const url = await onImageUpload(file);
-    if (url) {
-      editor.chain().focus().setImage({ src: url }).run();
-    }
-  }, [onImageUpload]);
-
   const editor = useEditor({
     extensions: [
       StarterKit.configure({
         heading: { levels: [1, 2, 3] },
       }),
-      Image.configure({
-        inline: true,
+      ResizableImage.configure({
+        inline: false,
         allowBase64: true,
-        HTMLAttributes: { class: 'editor-image' },
       }),
       Placeholder.configure({ placeholder }),
       Underline,
@@ -74,35 +148,6 @@ export default function RichTextEditor({
         class: 'editor-content',
         style: `min-height: ${minHeight}`,
       },
-      handlePaste: (view, event) => {
-        const items = event.clipboardData?.items;
-        if (!items) return false;
-
-        for (let i = 0; i < items.length; i++) {
-          if (items[i].type.indexOf('image') !== -1) {
-            event.preventDefault();
-            const file = items[i].getAsFile();
-            if (file) {
-              handleImageFile(file, view.state);
-            }
-            return true;
-          }
-        }
-        // Let default paste handle text with formatting
-        return false;
-      },
-      handleDrop: (view, event) => {
-        const files = event.dataTransfer?.files;
-        if (!files || files.length === 0) return false;
-
-        const file = files[0];
-        if (file.type.startsWith('image/')) {
-          event.preventDefault();
-          handleImageFile(file, view.state);
-          return true;
-        }
-        return false;
-      },
     },
   });
 
@@ -115,7 +160,7 @@ export default function RichTextEditor({
     }
   }, [content, editor]);
 
-  // Handle image paste properly with editor instance
+  // Handle image paste
   useEffect(() => {
     if (!editor) return;
     
@@ -130,7 +175,7 @@ export default function RichTextEditor({
           if (file) {
             const url = await onImageUpload(file);
             if (url) {
-              editor.chain().focus().setImage({ src: url }).run();
+              editor.chain().focus().setImage({ src: url, width: 400 }).run();
             }
           }
           return;
@@ -138,9 +183,27 @@ export default function RichTextEditor({
       }
     };
 
+    const handleDrop = async (event: DragEvent) => {
+      const files = event.dataTransfer?.files;
+      if (!files || files.length === 0) return;
+
+      const file = files[0];
+      if (file.type.startsWith('image/')) {
+        event.preventDefault();
+        const url = await onImageUpload(file);
+        if (url) {
+          editor.chain().focus().setImage({ src: url, width: 400 }).run();
+        }
+      }
+    };
+
     const editorElement = editor.view.dom;
     editorElement.addEventListener('paste', handlePaste as any);
-    return () => editorElement.removeEventListener('paste', handlePaste as any);
+    editorElement.addEventListener('drop', handleDrop as any);
+    return () => {
+      editorElement.removeEventListener('paste', handlePaste as any);
+      editorElement.removeEventListener('drop', handleDrop as any);
+    };
   }, [editor, onImageUpload]);
 
   const handleFileSelect = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
@@ -148,7 +211,7 @@ export default function RichTextEditor({
     if (file && editor) {
       onImageUpload(file).then(url => {
         if (url) {
-          editor.chain().focus().setImage({ src: url }).run();
+          editor.chain().focus().setImage({ src: url, width: 400 }).run();
         }
       });
     }
@@ -226,7 +289,7 @@ export default function RichTextEditor({
         </ToolbarButton>
         <input ref={fileInputRef} type="file" accept="image/*" onChange={handleFileSelect} className="hidden" />
         
-        <span className="ml-auto text-xs text-gray-400 hidden sm:inline">Paste images with Ctrl+V</span>
+        <span className="ml-auto text-xs text-gray-400 hidden sm:inline">Drag edges to resize images</span>
       </div>
 
       {/* Bubble menu for selected text */}
@@ -274,17 +337,6 @@ export default function RichTextEditor({
         }
         .editor-content li { margin: 0.25em 0; }
         .editor-content li p { margin: 0; }
-        .editor-content img.editor-image {
-          display: block;
-          max-width: 100%;
-          height: auto;
-          margin: 0.75em 0;
-          border-radius: 8px;
-          cursor: pointer;
-        }
-        .editor-content img.editor-image:hover {
-          box-shadow: 0 0 0 2px #3b82f6;
-        }
         .editor-content p.is-editor-empty:first-child::before {
           content: attr(data-placeholder);
           float: left;
@@ -310,6 +362,68 @@ export default function RichTextEditor({
         }
         .tippy-box { background: transparent !important; }
         .tippy-content { padding: 0 !important; }
+        
+        /* Resizable Image Styles */
+        .resizable-image-wrapper {
+          display: block;
+          margin: 0.75em 0;
+        }
+        .resizable-image-container {
+          position: relative;
+          display: inline-block;
+          max-width: 100%;
+          border-radius: 8px;
+          overflow: hidden;
+          transition: box-shadow 0.2s;
+        }
+        .resizable-image-container.selected {
+          box-shadow: 0 0 0 2px #3b82f6;
+        }
+        .resizable-image-container img {
+          display: block;
+          border-radius: 8px;
+        }
+        .resize-handle {
+          position: absolute;
+          top: 0;
+          bottom: 0;
+          width: 12px;
+          cursor: ew-resize;
+          opacity: 0;
+          transition: opacity 0.2s;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+        }
+        .resize-handle-right {
+          right: 0;
+        }
+        .resize-handle-left {
+          left: 0;
+        }
+        .resize-handle-inner {
+          width: 4px;
+          height: 40px;
+          max-height: 50%;
+          background: #3b82f6;
+          border-radius: 2px;
+        }
+        .resizable-image-container:hover .resize-handle,
+        .resizable-image-container.selected .resize-handle {
+          opacity: 1;
+        }
+        .size-indicator {
+          position: absolute;
+          bottom: 8px;
+          left: 50%;
+          transform: translateX(-50%);
+          background: rgba(0, 0, 0, 0.7);
+          color: white;
+          font-size: 11px;
+          padding: 2px 8px;
+          border-radius: 4px;
+          pointer-events: none;
+        }
       `}</style>
     </div>
   );
