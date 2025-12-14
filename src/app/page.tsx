@@ -80,7 +80,7 @@ const ChipSelect = memo(({ options, selected, onChange, label }: {
 });
 ChipSelect.displayName = 'ChipSelect';
 
-// Rich text note editor with formatting
+// Improved Note Editor with paste support, resizable images, and subtle styling
 const NoteEditor = memo(({ 
   content, 
   onChange, 
@@ -93,7 +93,8 @@ const NoteEditor = memo(({
   uploading,
   hasExistingNote,
   fileInputRef,
-  onImageClick
+  onImageClick,
+  onImagePaste
 }: {
   content: string;
   onChange: (content: string) => void;
@@ -105,19 +106,44 @@ const NoteEditor = memo(({
   saving: boolean;
   uploading: boolean;
   hasExistingNote: boolean;
-  fileInputRef: React.RefObject<HTMLInputElement>;
+  fileInputRef: React.RefObject<HTMLInputElement | null>;
   onImageClick: (src: string) => void;
+  onImagePaste: (file: File) => void;
 }) => {
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const [showColorPicker, setShowColorPicker] = useState(false);
+  const [imagesSizes, setImagesSizes] = useState<Record<number, 'small' | 'medium' | 'large'>>({});
   
   const colors = [
-    { name: 'Red', class: 'text-red-600', bg: 'bg-red-500' },
-    { name: 'Orange', class: 'text-orange-600', bg: 'bg-orange-500' },
-    { name: 'Green', class: 'text-green-600', bg: 'bg-green-500' },
-    { name: 'Blue', class: 'text-blue-600', bg: 'bg-blue-500' },
-    { name: 'Purple', class: 'text-purple-600', bg: 'bg-purple-500' },
+    { name: 'Red', value: 'red', bg: 'bg-red-500' },
+    { name: 'Orange', value: 'orange', bg: 'bg-orange-500' },
+    { name: 'Green', value: 'green', bg: 'bg-green-500' },
+    { name: 'Blue', value: 'blue', bg: 'bg-blue-500' },
+    { name: 'Purple', value: 'purple', bg: 'bg-purple-500' },
   ];
+
+  const sizeClasses = {
+    small: 'w-16 h-16',
+    medium: 'w-32 h-32',
+    large: 'w-48 h-48'
+  };
+
+  // Handle paste for images
+  const handlePaste = useCallback((e: React.ClipboardEvent) => {
+    const items = e.clipboardData?.items;
+    if (!items) return;
+    
+    for (let i = 0; i < items.length; i++) {
+      if (items[i].type.indexOf('image') !== -1) {
+        e.preventDefault();
+        const file = items[i].getAsFile();
+        if (file) {
+          onImagePaste(file);
+        }
+        return;
+      }
+    }
+  }, [onImagePaste]);
 
   const insertFormatting = (prefix: string, suffix: string = '') => {
     const textarea = textareaRef.current;
@@ -143,10 +169,8 @@ const NoteEditor = memo(({
     const beforeCursor = content.substring(0, start);
     const afterCursor = content.substring(start);
     
-    // Check if we're at the start of a line
     const lastNewline = beforeCursor.lastIndexOf('\n');
-    const lineStart = lastNewline === -1 ? 0 : lastNewline + 1;
-    const currentLineBeforeCursor = beforeCursor.substring(lineStart);
+    const currentLineBeforeCursor = beforeCursor.substring(lastNewline + 1);
     
     let newText;
     if (currentLineBeforeCursor.length === 0 || beforeCursor.endsWith('\n')) {
@@ -158,12 +182,12 @@ const NoteEditor = memo(({
     
     setTimeout(() => {
       textarea.focus();
-      const newPos = newText.indexOf('• ', start) + 2;
+      const newPos = beforeCursor.length + (currentLineBeforeCursor.length === 0 ? 2 : 3);
       textarea.setSelectionRange(newPos, newPos);
     }, 0);
   };
 
-  const insertColor = (colorClass: string) => {
+  const insertColor = (colorValue: string) => {
     const textarea = textareaRef.current;
     if (!textarea) return;
     
@@ -171,46 +195,18 @@ const NoteEditor = memo(({
     const end = textarea.selectionEnd;
     const selectedText = content.substring(start, end);
     
-    // Use markdown-like syntax for colors: [color:red]text[/color]
-    const colorName = colorClass.split('-')[1];
-    const newText = content.substring(0, start) + `[${colorName}]` + selectedText + `[/${colorName}]` + content.substring(end);
+    const newText = content.substring(0, start) + `[${colorValue}]` + selectedText + `[/${colorValue}]` + content.substring(end);
     onChange(newText);
     setShowColorPicker(false);
     
-    setTimeout(() => {
-      textarea.focus();
-    }, 0);
+    setTimeout(() => textarea.focus(), 0);
   };
 
-  // Render content with formatting
-  const renderFormattedContent = (text: string) => {
-    if (!text) return null;
-    
-    // Split by color tags and render (without 's' flag for ES2017 compatibility)
-    const parts = text.split(/(\[(?:red|orange|green|blue|purple)\][^\[]*\[\/(?:red|orange|green|blue|purple)\])/g);
-    
-    return parts.map((part, i) => {
-      const colorMatch = part.match(/\[(red|orange|green|blue|purple)\]([^\[]*)\[\/\1\]/);
-      if (colorMatch) {
-        const colorMap: Record<string, string> = {
-          red: 'text-red-600',
-          orange: 'text-orange-600', 
-          green: 'text-green-600',
-          blue: 'text-blue-600',
-          purple: 'text-purple-600'
-        };
-        return <span key={i} className={`${colorMap[colorMatch[1]]} font-medium`}>{colorMatch[2]}</span>;
-      }
-      
-      // Handle bullet points
-      const lines = part.split('\n');
-      return lines.map((line, j) => {
-        if (line.startsWith('• ')) {
-          return <div key={`${i}-${j}`} className="flex gap-2"><span>•</span><span>{line.substring(2)}</span></div>;
-        }
-        return <span key={`${i}-${j}`}>{line}{j < lines.length - 1 ? '\n' : ''}</span>;
-      });
-    });
+  const cycleImageSize = (index: number) => {
+    const currentSize = imagesSizes[index] || 'medium';
+    const sizes: ('small' | 'medium' | 'large')[] = ['small', 'medium', 'large'];
+    const nextIndex = (sizes.indexOf(currentSize) + 1) % sizes.length;
+    setImagesSizes(prev => ({ ...prev, [index]: sizes[nextIndex] }));
   };
 
   return (
@@ -218,40 +214,41 @@ const NoteEditor = memo(({
       <div className="flex items-center justify-between mb-3">
         <div className="flex items-center gap-2">
           <Icons.Notes />
-          <span className="font-semibold text-amber-800">My Notes</span>
+          <span className="font-medium text-gray-700">My Notes</span>
         </div>
         <div className="flex items-center gap-1">
           {hasExistingNote && (
-            <button onClick={onDelete} className="p-1.5 text-amber-600 hover:bg-amber-200 rounded-lg transition-colors" title="Delete note">
+            <button onClick={onDelete} className="p-1.5 text-gray-400 hover:text-red-500 hover:bg-gray-100 rounded-lg transition-colors" title="Delete note">
               <Icons.Trash />
             </button>
           )}
         </div>
       </div>
       
-      {/* Formatting Toolbar */}
-      <div className="flex flex-wrap items-center gap-1 mb-2 p-2 bg-amber-100 rounded-lg">
-        <button onClick={insertBullet} className="p-1.5 hover:bg-amber-200 rounded transition-colors" title="Bullet point">
+      {/* Formatting Toolbar - Subtle */}
+      <div className="flex flex-wrap items-center gap-0.5 mb-2 p-1.5 bg-gray-50 border border-gray-200 rounded-lg">
+        <button onClick={insertBullet} className="p-1.5 text-gray-500 hover:text-gray-700 hover:bg-gray-200 rounded transition-colors" title="Bullet point">
           <Icons.BulletList />
         </button>
-        <button onClick={() => insertFormatting('**', '**')} className="p-1.5 hover:bg-amber-200 rounded transition-colors" title="Bold">
+        <button onClick={() => insertFormatting('**', '**')} className="p-1.5 text-gray-500 hover:text-gray-700 hover:bg-gray-200 rounded transition-colors" title="Bold">
           <Icons.Bold />
         </button>
-        <button onClick={() => insertFormatting('_', '_')} className="p-1.5 hover:bg-amber-200 rounded transition-colors" title="Italic">
+        <button onClick={() => insertFormatting('_', '_')} className="p-1.5 text-gray-500 hover:text-gray-700 hover:bg-gray-200 rounded transition-colors" title="Italic">
           <Icons.Italic />
         </button>
+        <div className="w-px h-5 bg-gray-300 mx-1" />
         <div className="relative">
-          <button onClick={() => setShowColorPicker(!showColorPicker)} className="p-1.5 hover:bg-amber-200 rounded transition-colors flex items-center gap-1" title="Text color">
+          <button onClick={() => setShowColorPicker(!showColorPicker)} className="p-1.5 text-gray-500 hover:text-gray-700 hover:bg-gray-200 rounded transition-colors flex items-center gap-0.5" title="Text color">
             <Icons.Highlight />
             <Icons.ChevronDown />
           </button>
           {showColorPicker && (
-            <div className="absolute top-full left-0 mt-1 p-2 bg-white rounded-lg shadow-lg border border-gray-200 flex gap-1 z-10">
+            <div className="absolute top-full left-0 mt-1 p-2 bg-white rounded-lg shadow-lg border border-gray-200 flex gap-1.5 z-10">
               {colors.map(color => (
                 <button
                   key={color.name}
-                  onClick={() => insertColor(color.class)}
-                  className={`w-6 h-6 rounded-full ${color.bg} hover:ring-2 ring-offset-1 ring-gray-400 transition-all`}
+                  onClick={() => insertColor(color.value)}
+                  className={`w-6 h-6 rounded-full ${color.bg} hover:scale-110 transition-transform`}
                   title={color.name}
                 />
               ))}
@@ -259,40 +256,61 @@ const NoteEditor = memo(({
           )}
         </div>
         <div className="flex-1" />
-        <button onClick={() => fileInputRef.current?.click()} disabled={uploading} className="p-1.5 hover:bg-amber-200 rounded transition-colors" title="Add image">
-          <Icons.Image />
+        <span className="text-xs text-gray-400 mr-2 hidden sm:inline">Ctrl+V to paste image</span>
+        <button onClick={() => fileInputRef.current?.click()} disabled={uploading} className="p-1.5 text-gray-500 hover:text-gray-700 hover:bg-gray-200 rounded transition-colors" title="Add image">
+          {uploading ? <span className="w-4 h-4 border-2 border-gray-400 border-t-transparent rounded-full animate-spin inline-block" /> : <Icons.Image />}
         </button>
       </div>
       
+      {/* Resizable Textarea */}
       <textarea
         ref={textareaRef}
         value={content}
         onChange={e => onChange(e.target.value)}
-        placeholder="Add your study notes here... Use the toolbar for formatting!"
-        className="w-full p-3 bg-amber-50 border border-amber-200 rounded-lg resize-none text-sm focus:outline-none focus:ring-2 focus:ring-amber-400 min-h-[100px]"
-        style={{ whiteSpace: 'pre-wrap' }}
+        onPaste={handlePaste}
+        placeholder="Add your study notes here...&#10;&#10;• Use toolbar for formatting&#10;• Paste images with Ctrl+V&#10;• Drag corner to resize"
+        className="w-full p-3 bg-white border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent min-h-[120px] resize-y"
       />
       
-      {/* Images */}
+      {/* Images with resize option */}
       {images.length > 0 && (
-        <div className="flex flex-wrap gap-2 mt-3">
+        <div className="flex flex-wrap gap-3 mt-3 p-3 bg-gray-50 rounded-lg">
           {images.map((img, i) => (
             <div key={i} className="relative group">
-              <img src={img} alt="" className="w-20 h-20 object-cover rounded-lg cursor-pointer border-2 border-amber-200" onClick={() => onImageClick(img)} />
-              <button onClick={() => onImageRemove(i)} className="absolute -top-2 -right-2 w-5 h-5 bg-red-500 text-white rounded-full text-xs flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">×</button>
+              <img 
+                src={img} 
+                alt="" 
+                className={`${sizeClasses[imagesSizes[i] || 'medium']} object-cover rounded-lg cursor-pointer border border-gray-200 transition-all hover:border-blue-400`} 
+                onClick={() => onImageClick(img)} 
+              />
+              <div className="absolute top-1 right-1 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                <button 
+                  onClick={(e) => { e.stopPropagation(); cycleImageSize(i); }} 
+                  className="w-6 h-6 bg-white/90 hover:bg-white text-gray-600 rounded shadow-sm flex items-center justify-center text-xs font-medium"
+                  title="Resize"
+                >
+                  ↔
+                </button>
+                <button 
+                  onClick={(e) => { e.stopPropagation(); onImageRemove(i); }} 
+                  className="w-6 h-6 bg-red-500 hover:bg-red-600 text-white rounded shadow-sm flex items-center justify-center"
+                >
+                  ×
+                </button>
+              </div>
             </div>
           ))}
         </div>
       )}
       
-      {/* Save Button */}
-      <div className="flex justify-end mt-3">
+      {/* Save Button - Subtle */}
+      <div className="flex justify-end mt-3 gap-2">
         <button 
           onClick={onSave} 
           disabled={saving || (!content.trim() && images.length === 0)}
-          className="btn-primary text-sm py-2 px-4 flex items-center gap-2 !bg-amber-600 hover:!bg-amber-700"
+          className="btn-secondary text-sm py-2 px-4 flex items-center gap-2"
         >
-          <Icons.Save /> {saving ? 'Saving...' : 'Save Note'}
+          <Icons.Save /> {saving ? 'Saving...' : 'Save'}
         </button>
       </div>
       
@@ -442,6 +460,16 @@ export default function Home() {
     setCurrentNoteImages(prev => [...prev, ...urls]);
     setUploadingImage(false);
     if (fileInputRef.current) fileInputRef.current.value = '';
+  }, [uploadImage]);
+
+  // Handle pasted images (Ctrl+V)
+  const handleImagePaste = useCallback(async (file: File) => {
+    setUploadingImage(true);
+    const url = await uploadImage(file);
+    if (url) {
+      setCurrentNoteImages(prev => [...prev, url]);
+    }
+    setUploadingImage(false);
   }, [uploadImage]);
 
   const saveNote = useCallback(async () => {
@@ -624,7 +652,7 @@ export default function Home() {
                 </div>
               ) : (
                 <div className="animate-fadeIn">
-                  <div className={`max-w-3xl mx-auto ${showNotePanel ? 'lg:mr-0 lg:max-w-2xl' : ''}`}>
+                  <div className="max-w-3xl mx-auto">
                     {/* Progress bar header */}
                     <div className="mb-4 sm:mb-6">
                       <div className="flex items-center justify-between gap-2 mb-3">
@@ -717,7 +745,7 @@ export default function Home() {
                       </button>
                     </div>
                     
-                    {/* Inline Notes Section - Yellow Box */}
+                    {/* Inline Notes Section */}
                     {showNotePanel && (
                       <NoteEditor
                         content={currentNote}
@@ -732,6 +760,7 @@ export default function Home() {
                         hasExistingNote={!!currentQuestionNote}
                         fileInputRef={fileInputRef}
                         onImageClick={setLightboxImage}
+                        onImagePaste={handleImagePaste}
                       />
                     )}
                     
@@ -740,17 +769,17 @@ export default function Home() {
                       <div className="note-box-preview mt-4" onClick={() => setShowNotePanel(true)}>
                         <div className="flex items-center gap-2 mb-2">
                           <Icons.Notes />
-                          <span className="font-semibold text-amber-800">My Notes</span>
-                          <span className="text-xs text-amber-600">(tap to edit)</span>
+                          <span className="font-medium text-gray-700">My Notes</span>
+                          <span className="text-xs text-gray-400">(tap to edit)</span>
                         </div>
-                        <p className="text-amber-900 text-sm line-clamp-3">{currentQuestionNote.content}</p>
+                        <p className="text-gray-600 text-sm line-clamp-3">{currentQuestionNote.content}</p>
                         {currentQuestionNote.images && currentQuestionNote.images.length > 0 && (
                           <div className="flex gap-2 mt-2">
                             {currentQuestionNote.images.slice(0, 3).map((img, i) => (
-                              <img key={i} src={img} alt="" className="w-12 h-12 object-cover rounded-lg border border-amber-200" />
+                              <img key={i} src={img} alt="" className="w-12 h-12 object-cover rounded-lg border border-gray-200" />
                             ))}
                             {currentQuestionNote.images.length > 3 && (
-                              <span className="w-12 h-12 flex items-center justify-center bg-amber-200 rounded-lg text-amber-700 text-sm font-medium">+{currentQuestionNote.images.length - 3}</span>
+                              <span className="w-12 h-12 flex items-center justify-center bg-gray-100 rounded-lg text-gray-500 text-sm font-medium">+{currentQuestionNote.images.length - 3}</span>
                             )}
                           </div>
                         )}
