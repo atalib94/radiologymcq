@@ -5,8 +5,10 @@
 :root {
   --bg-primary: #f8fafc;
   --bg-secondary: #ffffff;
+  --bg-tertiary: #f1f5f9;
   --text-primary: #1e293b;
   --text-secondary: #64748b;
+  --text-muted: #94a3b8;
   --accent: #3b82f6;
   --accent-light: #eff6ff;
   --border: #e2e8f0;
@@ -17,6 +19,33 @@
   --radius-md: 12px;
   --radius-lg: 16px;
   --radius-xl: 20px;
+  --note-bg: #fefce8;
+  --note-border: #fef08a;
+  --correct-bg: #f0fdf4;
+  --correct-border: #bbf7d0;
+  --incorrect-bg: #fef2f2;
+  --incorrect-border: #fecaca;
+}
+
+.dark {
+  --bg-primary: #0f172a;
+  --bg-secondary: #1e293b;
+  --bg-tertiary: #334155;
+  --text-primary: #f1f5f9;
+  --text-secondary: #94a3b8;
+  --text-muted: #64748b;
+  --accent: #60a5fa;
+  --accent-light: #1e3a5f;
+  --border: #334155;
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.2);
+  --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.3);
+  --shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.4);
+  --note-bg: #422006;
+  --note-border: #854d0e;
+  --correct-bg: #14532d;
+  --correct-border: #166534;
+  --incorrect-bg: #450a0a;
+  --incorrect-border: #7f1d1d;
 }
 
 * {
@@ -25,16 +54,21 @@
 
 body {
   font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Segoe UI', Roboto, sans-serif;
-  background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+  background: var(--bg-primary);
   color: var(--text-primary);
   min-height: 100vh;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+.dark body {
+  background: var(--bg-primary);
 }
 
 /* Sidebar */
 .sidebar {
-  background: rgba(255, 255, 255, 0.95);
+  background: var(--bg-secondary);
   backdrop-filter: blur(20px);
   border-right: 1px solid var(--border);
 }
@@ -99,12 +133,12 @@ body {
 
 .option-button.correct {
   border-color: #22c55e !important;
-  background: #f0fdf4 !important;
+  background: var(--correct-bg) !important;
 }
 
 .option-button.incorrect {
   border-color: #ef4444 !important;
-  background: #fef2f2 !important;
+  background: var(--incorrect-bg) !important;
 }
 
 /* Option letter badge */
@@ -119,8 +153,8 @@ body {
   margin-right: 12px;
   font-weight: 600;
   font-size: 13px;
-  background: #f1f5f9;
-  color: #64748b;
+  background: var(--bg-tertiary);
+  color: var(--text-secondary);
   transition: all 0.2s ease;
 }
 
@@ -146,17 +180,43 @@ body {
 .stat-gradient-blue {
   background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%);
 }
+.dark .stat-gradient-blue {
+  background: linear-gradient(135deg, #1e3a5f 0%, #1e40af 100%);
+}
 
 .stat-gradient-green {
   background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%);
+}
+.dark .stat-gradient-green {
+  background: linear-gradient(135deg, #14532d 0%, #166534 100%);
 }
 
 .stat-gradient-purple {
   background: linear-gradient(135deg, #faf5ff 0%, #f3e8ff 100%);
 }
+.dark .stat-gradient-purple {
+  background: linear-gradient(135deg, #3b0764 0%, #581c87 100%);
+}
 
 .stat-gradient-amber {
   background: linear-gradient(135deg, #fffbeb 0%, #fef3c7 100%);
+}
+.dark .stat-gradient-amber {
+  background: linear-gradient(135deg, #451a03 0%, #78350f 100%);
+}
+
+.dark .stat-gradient-blue p,
+.dark .stat-gradient-green p,
+.dark .stat-gradient-purple p,
+.dark .stat-gradient-amber p {
+  color: var(--text-primary) !important;
+}
+
+.dark .stat-gradient-blue .text-gray-500,
+.dark .stat-gradient-green .text-gray-500,
+.dark .stat-gradient-purple .text-gray-500,
+.dark .stat-gradient-amber .text-gray-500 {
+  color: var(--text-secondary) !important;
 }
 
 /* Chips */
@@ -164,7 +224,7 @@ body {
   display: inline-flex;
   align-items: center;
   padding: 8px 14px;
-  background: #f1f5f9;
+  background: var(--bg-tertiary);
   border: 1px solid transparent;
   border-radius: 20px;
   font-size: 13px;
@@ -176,7 +236,7 @@ body {
 }
 
 .chip:hover {
-  background: #e2e8f0;
+  background: var(--border);
 }
 
 .chip.active {
@@ -206,6 +266,10 @@ body {
   transform: translateY(-1px);
 }
 
+.dark .btn-primary:hover:not(:disabled) {
+  background: #3b82f6;
+}
+
 .btn-primary:disabled {
   opacity: 0.5;
   cursor: not-allowed;
@@ -217,7 +281,7 @@ body {
   align-items: center;
   justify-content: center;
   padding: 10px 16px;
-  background: #f1f5f9;
+  background: var(--bg-tertiary);
   color: var(--text-secondary);
   border: none;
   border-radius: var(--radius-md);
@@ -228,7 +292,7 @@ body {
 }
 
 .btn-secondary:hover:not(:disabled) {
-  background: #e2e8f0;
+  background: var(--border);
   color: var(--text-primary);
 }
 
@@ -397,13 +461,13 @@ body {
 }
 
 .explanation-box.correct {
-  background: #f0fdf4;
-  border: 1px solid #bbf7d0;
+  background: var(--correct-bg);
+  border: 1px solid var(--correct-border);
 }
 
 .explanation-box.incorrect {
-  background: #fef2f2;
-  border: 1px solid #fecaca;
+  background: var(--incorrect-bg);
+  border: 1px solid var(--incorrect-border);
 }
 
 /* Navigation buttons */
@@ -419,7 +483,7 @@ body {
   position: sticky;
   top: 0;
   z-index: 30;
-  background: rgba(255, 255, 255, 0.9);
+  background: var(--bg-secondary);
   backdrop-filter: blur(12px);
   border-bottom: 1px solid var(--border);
   padding: 12px 16px;
@@ -485,15 +549,15 @@ body {
 
 /* Note Box - Subtle styling */
 .note-box {
-  background: #fefce8;
-  border: 1px solid #fef08a;
+  background: var(--note-bg);
+  border: 1px solid var(--note-border);
   border-radius: var(--radius-lg);
   padding: 16px;
 }
 
 .note-box-preview {
-  background: #fefce8;
-  border: 1px solid #fef08a;
+  background: var(--note-bg);
+  border: 1px solid var(--note-border);
   border-radius: var(--radius-lg);
   padding: 12px 16px;
   cursor: pointer;
@@ -501,8 +565,8 @@ body {
 }
 
 .note-box-preview:hover {
-  border-color: #fde047;
-  background: #fef9c3;
+  border-color: var(--note-border);
+  filter: brightness(1.05);
 }
 
 /* Rich Text Editor / Prose Styles */
@@ -584,7 +648,7 @@ body {
 }
 
 .prose code {
-  background: #f1f5f9;
+  background: var(--bg-tertiary);
   padding: 0.2em 0.4em;
   border-radius: 4px;
   font-size: 0.9em;
@@ -612,7 +676,7 @@ body {
 .ProseMirror p.is-editor-empty:first-child::before {
   content: attr(data-placeholder);
   float: left;
-  color: #9ca3af;
+  color: var(--text-muted);
   pointer-events: none;
   height: 0;
 }
@@ -623,7 +687,7 @@ body {
 
 /* Rich text editor container */
 .rich-text-editor {
-  background: white;
+  background: var(--bg-secondary);
 }
 
 .rich-text-editor .ProseMirror {
