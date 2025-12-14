@@ -53,6 +53,10 @@ const Icons = {
   Clock: () => <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth={1.5} viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>,
   XCircle: () => <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth={1.5} viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M9.75 9.75l4.5 4.5m0-4.5l-4.5 4.5M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>,
   Refresh: () => <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth={1.5} viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0l3.181 3.183a8.25 8.25 0 0013.803-3.7M4.031 9.865a8.25 8.25 0 0113.803-3.7l3.181 3.182m0-4.991v4.99" /></svg>,
+  Sun: () => <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth={1.5} viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M12 3v2.25m6.364.386l-1.591 1.591M21 12h-2.25m-.386 6.364l-1.591-1.591M12 18.75V21m-4.773-4.227l-1.591 1.591M5.25 12H3m4.227-4.773L5.636 5.636M15.75 12a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0z" /></svg>,
+  Moon: () => <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth={1.5} viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M21.752 15.002A9.718 9.718 0 0118 15.75c-5.385 0-9.75-4.365-9.75-9.75 0-1.33.266-2.597.748-3.752A9.753 9.753 0 003 11.25C3 16.635 7.365 21 12.75 21a9.753 9.753 0 009.002-5.998z" /></svg>,
+  Download: () => <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth={1.5} viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M16.5 12L12 16.5m0 0L7.5 12m4.5 4.5V3" /></svg>,
+  FileText: () => <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth={1.5} viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m0 12.75h7.5m-7.5 3H12M10.5 2.25H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z" /></svg>,
 };
 
 const NavButton = memo(({ icon, label, active, onClick }: { icon: React.ReactNode; label: string; active?: boolean; onClick: () => void }) => (
@@ -214,8 +218,31 @@ export default function Home() {
   const [quizMode, setQuizMode] = useState<QuizMode>('all');
   const [quizLimit, setQuizLimit] = useState<number | 'all'>('all');
   const [quizCompleted, setQuizCompleted] = useState(false);
+  const [darkMode, setDarkMode] = useState(false);
+  const [expandedNotes, setExpandedNotes] = useState<Set<string>>(new Set());
+  const [showExportModal, setShowExportModal] = useState(false);
+  const [exportCategories, setExportCategories] = useState<string[]>([]);
   
   const supabase = useMemo(() => createClient(), []);
+
+  // Dark mode effect
+  useEffect(() => {
+    const saved = localStorage.getItem('darkMode');
+    if (saved !== null) {
+      setDarkMode(JSON.parse(saved));
+    } else if (window.matchMedia('(prefers-color-scheme: dark)').matches) {
+      setDarkMode(true);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (darkMode) {
+      document.documentElement.classList.add('dark');
+    } else {
+      document.documentElement.classList.remove('dark');
+    }
+    localStorage.setItem('darkMode', JSON.stringify(darkMode));
+  }, [darkMode]);
 
   const currentQuestion = quizQuestions[currentQuestionIndex];
   const currentQuestionNote = useMemo(() => currentQuestion ? notes.find(n => n.question_id === currentQuestion.id) || null : null, [notes, currentQuestion]);
@@ -501,6 +528,128 @@ export default function Home() {
   const categoryOptions = useMemo(() => Object.entries(CATEGORY_INFO).map(([key, info]) => ({ key, label: info.name, count: questionCounts.byCategory[key] || 0 })), [questionCounts.byCategory]);
   const subspecialtyOptions = useMemo(() => Object.entries(SUBSPECIALTY_INFO).map(([key, info]) => ({ key, label: info.name, count: questionCounts.bySubspecialty[key] || 0 })).filter(opt => (questionCounts.bySubspecialty[opt.key] || 0) > 0), [questionCounts.bySubspecialty]);
 
+  // Toggle note expansion
+  const toggleNoteExpanded = useCallback((noteId: string) => {
+    setExpandedNotes(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(noteId)) {
+        newSet.delete(noteId);
+      } else {
+        newSet.add(noteId);
+      }
+      return newSet;
+    });
+  }, []);
+
+  // Expand/collapse all notes
+  const expandAllNotes = useCallback(() => {
+    setExpandedNotes(new Set(filteredNotes.map(n => n.id)));
+  }, [filteredNotes]);
+
+  const collapseAllNotes = useCallback(() => {
+    setExpandedNotes(new Set());
+  }, []);
+
+  // Get question for a note
+  const getQuestionForNote = useCallback((note: Note) => {
+    if (!note.question_id) return null;
+    return questions.find(q => q.id === note.question_id) || null;
+  }, [questions]);
+
+  // Notes by category for export
+  const notesByCategory = useMemo(() => {
+    const grouped: Record<string, Note[]> = {};
+    notes.forEach(n => {
+      const cat = n.category || 'uncategorized';
+      if (!grouped[cat]) grouped[cat] = [];
+      grouped[cat].push(n);
+    });
+    return grouped;
+  }, [notes]);
+
+  // Export notes to PDF
+  const exportNotesToPdf = useCallback(async () => {
+    const selectedNotes = notes.filter(n => {
+      if (exportCategories.length === 0) return true;
+      return exportCategories.includes(n.category || 'uncategorized');
+    });
+
+    if (selectedNotes.length === 0) {
+      alert('No notes to export');
+      return;
+    }
+
+    // Create HTML content for PDF
+    let htmlContent = `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <meta charset="UTF-8">
+        <title>Study Notes Export</title>
+        <style>
+          body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; padding: 40px; max-width: 800px; margin: 0 auto; }
+          h1 { color: #1e293b; border-bottom: 2px solid #3b82f6; padding-bottom: 10px; }
+          h2 { color: #3b82f6; margin-top: 30px; }
+          .note { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 20px; margin: 20px 0; page-break-inside: avoid; }
+          .note-title { font-weight: 600; color: #1e293b; margin-bottom: 10px; }
+          .question { background: #eff6ff; padding: 15px; border-radius: 6px; margin-bottom: 15px; font-style: italic; }
+          .question-label { font-size: 12px; color: #3b82f6; font-weight: 600; margin-bottom: 5px; }
+          .content { color: #475569; line-height: 1.6; }
+          .category-badge { display: inline-block; background: #dbeafe; color: #1d4ed8; padding: 4px 10px; border-radius: 4px; font-size: 12px; margin-bottom: 10px; }
+          .date { color: #94a3b8; font-size: 12px; }
+          img { max-width: 100%; height: auto; border-radius: 4px; }
+        </style>
+      </head>
+      <body>
+        <h1>📚 Study Notes</h1>
+        <p style="color: #64748b;">Exported on ${new Date().toLocaleDateString()} • ${selectedNotes.length} notes</p>
+    `;
+
+    // Group by category
+    const grouped: Record<string, Note[]> = {};
+    selectedNotes.forEach(n => {
+      const cat = n.category || 'uncategorized';
+      if (!grouped[cat]) grouped[cat] = [];
+      grouped[cat].push(n);
+    });
+
+    Object.entries(grouped).forEach(([cat, catNotes]) => {
+      const catName = CATEGORY_INFO[cat as keyof typeof CATEGORY_INFO]?.name || 'Uncategorized';
+      htmlContent += `<h2>${catName}</h2>`;
+      
+      catNotes.forEach(note => {
+        const question = getQuestionForNote(note);
+        htmlContent += `
+          <div class="note">
+            <div class="note-title">${note.title}</div>
+            ${question ? `
+              <div class="question">
+                <div class="question-label">Related Question:</div>
+                ${question.question_text}
+              </div>
+            ` : ''}
+            <div class="content">${note.content}</div>
+            <div class="date">${new Date(note.updated_at).toLocaleDateString()}</div>
+          </div>
+        `;
+      });
+    });
+
+    htmlContent += '</body></html>';
+
+    // Open print dialog
+    const printWindow = window.open('', '_blank');
+    if (printWindow) {
+      printWindow.document.write(htmlContent);
+      printWindow.document.close();
+      printWindow.onload = () => {
+        printWindow.print();
+      };
+    }
+    
+    setShowExportModal(false);
+  }, [notes, exportCategories, getQuestionForNote]);
+
   // Auth loading state
   if (authLoading) {
     return (
@@ -572,22 +721,32 @@ export default function Home() {
             </div>
           </div>
           {/* User info and logout */}
-          <div className="p-4 mx-4 mb-4 border-t border-gray-100">
+          <div className="p-4 mx-4 mb-4 border-t border-gray-100 dark:border-gray-700">
             <div className="flex items-center gap-3 mb-3">
-              <div className="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center text-blue-600">
+              <div className="w-8 h-8 rounded-full bg-blue-100 dark:bg-blue-900 flex items-center justify-center text-blue-600 dark:text-blue-400">
                 <Icons.User />
               </div>
               <div className="flex-1 min-w-0">
-                <p className="text-sm font-medium text-gray-800 truncate">{user?.user_metadata?.name || 'User'}</p>
+                <p className="text-sm font-medium text-gray-800 dark:text-gray-200 truncate">{user?.user_metadata?.name || 'User'}</p>
                 <p className="text-xs text-gray-400 truncate">{user?.email}</p>
               </div>
             </div>
-            <button 
-              onClick={() => signOut()} 
-              className="w-full flex items-center justify-center gap-2 px-3 py-2 text-sm text-gray-600 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
-            >
-              <Icons.Logout /> Sign out
-            </button>
+            <div className="flex gap-2">
+              <button 
+                onClick={() => setDarkMode(!darkMode)} 
+                className="flex-1 flex items-center justify-center gap-2 px-3 py-2 text-sm text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
+                title={darkMode ? 'Light mode' : 'Dark mode'}
+              >
+                {darkMode ? <Icons.Sun /> : <Icons.Moon />}
+                {darkMode ? 'Light' : 'Dark'}
+              </button>
+              <button 
+                onClick={() => signOut()} 
+                className="flex-1 flex items-center justify-center gap-2 px-3 py-2 text-sm text-gray-600 dark:text-gray-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/30 rounded-lg transition-colors"
+              >
+                <Icons.Logout /> Sign out
+              </button>
+            </div>
           </div>
         </div>
       </nav>
@@ -1197,7 +1356,16 @@ export default function Home() {
           {/* Notes */}
           {currentView === 'notes' && (
             <div className="space-y-6 animate-fadeIn">
-              <h2 className="text-2xl sm:text-3xl font-bold text-gray-800">My Notes</h2>
+              <div className="flex items-center justify-between">
+                <h2 className="text-2xl sm:text-3xl font-bold text-gray-800 dark:text-gray-100">My Notes</h2>
+                <button 
+                  onClick={() => { setExportCategories([]); setShowExportModal(true); }}
+                  className="btn-secondary flex items-center gap-2"
+                  disabled={notes.length === 0}
+                >
+                  <Icons.Download /> Export PDF
+                </button>
+              </div>
               
               {/* Search and Sort Controls */}
               <div className="flex flex-col sm:flex-row gap-3">
@@ -1225,57 +1393,185 @@ export default function Home() {
                 </div>
               </div>
 
+              {/* Expand/Collapse All */}
+              {filteredNotes.length > 0 && (
+                <div className="flex gap-2">
+                  <button onClick={expandAllNotes} className="text-sm text-blue-600 hover:text-blue-700 dark:text-blue-400">
+                    Expand all
+                  </button>
+                  <span className="text-gray-300 dark:text-gray-600">|</span>
+                  <button onClick={collapseAllNotes} className="text-sm text-gray-500 hover:text-gray-700 dark:text-gray-400">
+                    Collapse all
+                  </button>
+                </div>
+              )}
+
               {filteredNotes.length === 0 ? (
                 <div className="text-center py-16"><p className="text-gray-400">No notes yet</p></div>
               ) : (
                 <div className="grid gap-4">
-                  {filteredNotes.map(n => (
-                    <div key={n.id} className="elevated-card p-4 sm:p-5">
-                      {editingNoteId === n.id ? (
-                        /* Edit Mode - Using NoteEditor */
-                        <div>
-                          <h3 className="font-semibold text-gray-800 text-sm sm:text-base mb-3">{n.title}</h3>
-                          <NoteEditor
-                            content={editingNoteContent}
-                            onChange={setEditingNoteContent}
-                            onSave={saveEditingNote}
-                            onCancel={cancelEditingNote}
-                            saving={savingEditNote}
-                            hasExistingNote={true}
-                            onImageUpload={uploadImage}
-                            showHeader={false}
-                          />
-                        </div>
-                      ) : (
-                        /* View Mode */
-                        <>
-                          <div className="flex justify-between items-start mb-3">
-                            <div>
-                              <h3 className="font-semibold text-gray-800 text-sm sm:text-base">{n.title}</h3>
-                              <div className="flex items-center gap-2 mt-1">
-                                {n.category && (
-                                  <span className="text-xs px-2 py-0.5 bg-blue-50 text-blue-600 rounded">{CATEGORY_INFO[n.category as keyof typeof CATEGORY_INFO]?.name || n.category}</span>
-                                )}
-                                <span className="text-xs text-gray-400">{new Date(n.updated_at).toLocaleDateString()}</span>
-                              </div>
-                            </div>
-                            <div className="flex items-center gap-1">
-                              <button onClick={() => startEditingNote(n)} className="p-1.5 text-gray-400 hover:text-blue-500 transition-colors" title="Edit">
-                                <Icons.Edit />
-                              </button>
-                              <button onClick={async () => { if (confirm('Delete this note?')) { await supabase.from('notes').delete().eq('id', n.id); loadData(); }}} className="p-1.5 text-gray-400 hover:text-red-500 transition-colors" title="Delete">
-                                <Icons.Trash />
-                              </button>
+                  {filteredNotes.map(n => {
+                    const isExpanded = expandedNotes.has(n.id);
+                    const relatedQuestion = getQuestionForNote(n);
+                    
+                    return (
+                      <div key={n.id} className="elevated-card overflow-hidden">
+                        {/* Collapsible Header */}
+                        <button 
+                          onClick={() => toggleNoteExpanded(n.id)}
+                          className="w-full p-4 sm:p-5 flex items-center justify-between text-left hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors"
+                        >
+                          <div className="flex-1 min-w-0">
+                            <h3 className="font-semibold text-gray-800 dark:text-gray-100 text-sm sm:text-base truncate">{n.title}</h3>
+                            <div className="flex items-center gap-2 mt-1">
+                              {n.category && (
+                                <span className="text-xs px-2 py-0.5 bg-blue-50 dark:bg-blue-900/50 text-blue-600 dark:text-blue-400 rounded">
+                                  {CATEGORY_INFO[n.category as keyof typeof CATEGORY_INFO]?.name || n.category}
+                                </span>
+                              )}
+                              <span className="text-xs text-gray-400">{new Date(n.updated_at).toLocaleDateString()}</span>
+                              {relatedQuestion && (
+                                <span className="text-xs text-purple-500 dark:text-purple-400">• Has question</span>
+                              )}
                             </div>
                           </div>
-                          <div 
-                            className="text-gray-600 text-sm prose prose-sm max-w-none"
-                            dangerouslySetInnerHTML={{ __html: n.content }}
-                          />
-                        </>
-                      )}
+                          <div className={`ml-4 transform transition-transform ${isExpanded ? 'rotate-180' : ''}`}>
+                            <Icons.ChevronDown />
+                          </div>
+                        </button>
+
+                        {/* Expanded Content */}
+                        {isExpanded && (
+                          <div className="border-t border-gray-100 dark:border-gray-700">
+                            {editingNoteId === n.id ? (
+                              /* Edit Mode */
+                              <div className="p-4 sm:p-5">
+                                <NoteEditor
+                                  content={editingNoteContent}
+                                  onChange={setEditingNoteContent}
+                                  onSave={saveEditingNote}
+                                  onCancel={cancelEditingNote}
+                                  saving={savingEditNote}
+                                  hasExistingNote={true}
+                                  onImageUpload={uploadImage}
+                                  showHeader={false}
+                                />
+                              </div>
+                            ) : (
+                              /* View Mode */
+                              <div className="p-4 sm:p-5">
+                                {/* Related Question */}
+                                {relatedQuestion && (
+                                  <div className="mb-4 p-4 bg-blue-50 dark:bg-blue-900/30 rounded-xl border border-blue-100 dark:border-blue-800">
+                                    <div className="flex items-center gap-2 mb-2">
+                                      <Icons.FileText />
+                                      <span className="text-sm font-medium text-blue-700 dark:text-blue-300">Related Question</span>
+                                    </div>
+                                    <p className="text-gray-700 dark:text-gray-300 text-sm">{relatedQuestion.question_text}</p>
+                                    {relatedQuestion.options && (
+                                      <div className="mt-3 space-y-1">
+                                        {Object.entries(relatedQuestion.options).map(([key, value]) => (
+                                          <div 
+                                            key={key} 
+                                            className={`text-xs px-3 py-1.5 rounded ${
+                                              key === relatedQuestion.correct_answer 
+                                                ? 'bg-green-100 dark:bg-green-900/50 text-green-700 dark:text-green-300 font-medium' 
+                                                : 'text-gray-600 dark:text-gray-400'
+                                            }`}
+                                          >
+                                            <span className="font-medium">{key.toUpperCase()}.</span> {value}
+                                          </div>
+                                        ))}
+                                      </div>
+                                    )}
+                                    {relatedQuestion.explanation && (
+                                      <div className="mt-3 pt-3 border-t border-blue-200 dark:border-blue-700">
+                                        <p className="text-xs text-gray-600 dark:text-gray-400 italic">{relatedQuestion.explanation}</p>
+                                      </div>
+                                    )}
+                                  </div>
+                                )}
+
+                                {/* Note Content */}
+                                <div 
+                                  className="text-gray-600 dark:text-gray-300 text-sm prose prose-sm max-w-none dark:prose-invert"
+                                  dangerouslySetInnerHTML={{ __html: n.content }}
+                                />
+
+                                {/* Actions */}
+                                <div className="flex items-center gap-2 mt-4 pt-4 border-t border-gray-100 dark:border-gray-700">
+                                  <button onClick={() => startEditingNote(n)} className="btn-secondary text-sm py-2 px-3 flex items-center gap-1">
+                                    <Icons.Edit /> Edit
+                                  </button>
+                                  <button 
+                                    onClick={async () => { if (confirm('Delete this note?')) { await supabase.from('notes').delete().eq('id', n.id); loadData(); }}} 
+                                    className="btn-secondary text-sm py-2 px-3 flex items-center gap-1 text-red-500 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/30"
+                                  >
+                                    <Icons.Trash /> Delete
+                                  </button>
+                                </div>
+                              </div>
+                            )}
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+
+              {/* Export Modal */}
+              {showExportModal && (
+                <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4 animate-fadeIn">
+                  <div className="elevated-card max-w-md w-full p-6 animate-slideUp">
+                    <h3 className="text-lg font-bold text-gray-800 dark:text-gray-100 mb-4">Export Notes to PDF</h3>
+                    
+                    <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
+                      Select categories to export, or leave empty to export all notes.
+                    </p>
+
+                    <div className="space-y-2 mb-6 max-h-64 overflow-y-auto">
+                      {Object.entries(notesByCategory).map(([cat, catNotes]) => {
+                        const catName = CATEGORY_INFO[cat as keyof typeof CATEGORY_INFO]?.name || 'Uncategorized';
+                        const isSelected = exportCategories.includes(cat);
+                        return (
+                          <button
+                            key={cat}
+                            onClick={() => {
+                              if (isSelected) {
+                                setExportCategories(prev => prev.filter(c => c !== cat));
+                              } else {
+                                setExportCategories(prev => [...prev, cat]);
+                              }
+                            }}
+                            className={`w-full p-3 rounded-lg text-left flex items-center justify-between transition-all ${
+                              isSelected 
+                                ? 'bg-blue-50 dark:bg-blue-900/50 border-2 border-blue-500' 
+                                : 'bg-gray-50 dark:bg-gray-800 border-2 border-transparent hover:border-gray-200 dark:hover:border-gray-600'
+                            }`}
+                          >
+                            <span className="font-medium text-gray-700 dark:text-gray-300">{catName}</span>
+                            <span className="text-sm text-gray-500">{catNotes.length} notes</span>
+                          </button>
+                        );
+                      })}
                     </div>
-                  ))}
+
+                    <div className="flex gap-3">
+                      <button 
+                        onClick={() => setShowExportModal(false)}
+                        className="btn-secondary flex-1"
+                      >
+                        Cancel
+                      </button>
+                      <button 
+                        onClick={exportNotesToPdf}
+                        className="btn-primary flex-1 flex items-center justify-center gap-2"
+                      >
+                        <Icons.Download /> Export {exportCategories.length > 0 ? `(${exportCategories.length})` : 'All'}
+                      </button>
+                    </div>
+                  </div>
                 </div>
               )}
             </div>
