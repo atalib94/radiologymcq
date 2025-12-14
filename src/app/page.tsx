@@ -265,7 +265,7 @@ export default function Home() {
             <div className="p-6 bg-navy-800/50 rounded-xl border border-navy-700 mb-6">
               {question.image_url && <img src={question.image_url} alt="Question" className="w-full max-h-64 object-contain rounded-lg mb-4 bg-navy-900" />}
               <p className="text-lg leading-relaxed">{question.question_text}</p>
-              {question.tags?.length > 0 && <div className="flex flex-wrap gap-2 mt-4">{question.tags.map(tag => <span key={tag} className="px-2 py-0.5 bg-navy-700 rounded text-xs text-navy-300">{tag}</span>)}</div>}
+              {question.tags && question.tags.length > 0 && <div className="flex flex-wrap gap-2 mt-4">{question.tags.map(tag => <span key={tag} className="px-2 py-0.5 bg-navy-700 rounded text-xs text-navy-300">{tag}</span>)}</div>}
             </div>
             {question.options && (
               <div className="space-y-3 mb-6">
