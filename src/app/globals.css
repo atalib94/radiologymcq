@@ -1,4 +1,6 @@
-@import "tailwindcss";
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
 
 :root {
   --bg-primary: #f8fafc;
@@ -368,24 +370,11 @@ body {
 
 /* Mobile-specific fixes */
 @media (max-width: 639px) {
-  /* Ensure full width on mobile */
-  .mobile-full-width {
-    width: 100%;
-    max-width: 100%;
-  }
-  
-  /* Reduce padding on mobile */
-  .mobile-compact {
-    padding: 12px;
-  }
-  
-  /* Quiz card mobile */
   .quiz-card {
     border-radius: var(--radius-md);
     padding: 16px;
   }
   
-  /* Options on mobile - more compact */
   .option-button {
     padding: 12px 14px;
     font-size: 14px;
@@ -396,19 +385,6 @@ body {
     height: 28px;
     font-size: 12px;
     margin-right: 10px;
-  }
-  
-  /* Stat cards on mobile */
-  .stat-card-mobile {
-    padding: 14px;
-  }
-  
-  .stat-card-mobile .stat-value {
-    font-size: 24px;
-  }
-  
-  .stat-card-mobile .stat-label {
-    font-size: 12px;
   }
 }
 
@@ -438,7 +414,7 @@ body {
   gap: 12px;
 }
 
-/* Header - fixed for mobile */
+/* Header */
 .app-header {
   position: sticky;
   top: 0;
@@ -487,11 +463,6 @@ body {
   .safe-area-bottom {
     padding-bottom: env(safe-area-inset-bottom);
   }
-}
-
-/* Fix for text overflow */
-.text-wrap-balance {
-  text-wrap: balance;
 }
 
 /* Progress bar container */
