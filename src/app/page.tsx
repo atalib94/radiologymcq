@@ -186,11 +186,11 @@ const NoteEditor = memo(({
   const renderFormattedContent = (text: string) => {
     if (!text) return null;
     
-    // Split by color tags and render
-    const parts = text.split(/(\[(?:red|orange|green|blue|purple)\].*?\[\/(?:red|orange|green|blue|purple)\])/gs);
+    // Split by color tags and render (without 's' flag for ES2017 compatibility)
+    const parts = text.split(/(\[(?:red|orange|green|blue|purple)\][^\[]*\[\/(?:red|orange|green|blue|purple)\])/g);
     
     return parts.map((part, i) => {
-      const colorMatch = part.match(/\[(red|orange|green|blue|purple)\](.*?)\[\/\1\]/s);
+      const colorMatch = part.match(/\[(red|orange|green|blue|purple)\]([^\[]*)\[\/\1\]/);
       if (colorMatch) {
         const colorMap: Record<string, string> = {
           red: 'text-red-600',
