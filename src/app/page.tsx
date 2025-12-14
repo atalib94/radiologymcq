@@ -106,7 +106,7 @@ const NoteEditor = memo(({
   saving: boolean;
   uploading: boolean;
   hasExistingNote: boolean;
-  fileInputRef: React.RefObject<HTMLInputElement>;
+  fileInputRef: React.MutableRefObject<HTMLInputElement | null>;
   onImageClick: (src: string) => void;
   onImagePaste: (file: File) => void;
 }) => {
@@ -342,6 +342,14 @@ export default function Home() {
   const [uploadingImage, setUploadingImage] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [lightboxImage, setLightboxImage] = useState<string | null>(null);
+  const [noteSortBy, setNoteSortBy] = useState<'date' | 'category' | 'title'>('date');
+  const [noteSortOrder, setNoteSortOrder] = useState<'asc' | 'desc'>('desc');
+  const [editingNoteId, setEditingNoteId] = useState<string | null>(null);
+  const [editingNoteContent, setEditingNoteContent] = useState('');
+  const [editingNoteImages, setEditingNoteImages] = useState<string[]>([]);
+  const [savingEditNote, setSavingEditNote] = useState(false);
+  
+  const editFileInputRef = useRef<HTMLInputElement>(null);
   
   const fileInputRef = useRef<HTMLInputElement>(null);
   const supabase = useMemo(() => createClient(), []);
@@ -372,10 +380,25 @@ export default function Home() {
   }, [currentQuestionNote]);
 
   const filteredNotes = useMemo(() => {
-    if (!searchQuery) return notes;
-    const q = searchQuery.toLowerCase();
-    return notes.filter(n => n.title.toLowerCase().includes(q) || n.content.toLowerCase().includes(q));
-  }, [notes, searchQuery]);
+    let result = notes;
+    if (searchQuery) {
+      const q = searchQuery.toLowerCase();
+      result = result.filter(n => n.title.toLowerCase().includes(q) || n.content.toLowerCase().includes(q));
+    }
+    // Sort
+    result = [...result].sort((a, b) => {
+      let cmp = 0;
+      if (noteSortBy === 'date') {
+        cmp = new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime();
+      } else if (noteSortBy === 'category') {
+        cmp = (a.category || '').localeCompare(b.category || '');
+      } else if (noteSortBy === 'title') {
+        cmp = a.title.localeCompare(b.title);
+      }
+      return noteSortOrder === 'asc' ? -cmp : cmp;
+    });
+    return result;
+  }, [notes, searchQuery, noteSortBy, noteSortOrder]);
 
   const stats = useMemo(() => {
     const attempted = progress.length;
@@ -498,6 +521,55 @@ export default function Home() {
   const handleNoteChange = useCallback((e: React.ChangeEvent<HTMLTextAreaElement>) => setCurrentNote(e.target.value), []);
   const handleSearchChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => setSearchQuery(e.target.value), []);
   const removeNoteImage = useCallback((index: number) => setCurrentNoteImages(prev => prev.filter((_, i) => i !== index)), []);
+
+  // Note editing in overview
+  const startEditingNote = useCallback((note: Note) => {
+    setEditingNoteId(note.id);
+    setEditingNoteContent(note.content);
+    setEditingNoteImages(note.images || []);
+  }, []);
+
+  const cancelEditingNote = useCallback(() => {
+    setEditingNoteId(null);
+    setEditingNoteContent('');
+    setEditingNoteImages([]);
+  }, []);
+
+  const saveEditingNote = useCallback(async () => {
+    if (!editingNoteId) return;
+    setSavingEditNote(true);
+    try {
+      await supabase.from('notes').update({ 
+        content: editingNoteContent, 
+        images: editingNoteImages, 
+        updated_at: new Date().toISOString() 
+      }).eq('id', editingNoteId);
+      const { data } = await supabase.from('notes').select('*').order('updated_at', { ascending: false });
+      if (data) setNotes(data);
+      setEditingNoteId(null);
+      setEditingNoteContent('');
+      setEditingNoteImages([]);
+    } catch (e) { console.error(e); }
+    setSavingEditNote(false);
+  }, [editingNoteId, editingNoteContent, editingNoteImages, supabase]);
+
+  const handleEditImageUpload = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (!files) return;
+    const urls: string[] = [];
+    for (let i = 0; i < files.length; i++) { const url = await uploadImage(files[i]); if (url) urls.push(url); }
+    setEditingNoteImages(prev => [...prev, ...urls]);
+    if (editFileInputRef.current) editFileInputRef.current.value = '';
+  }, [uploadImage]);
+
+  const handleEditImagePaste = useCallback(async (file: File) => {
+    const url = await uploadImage(file);
+    if (url) setEditingNoteImages(prev => [...prev, url]);
+  }, [uploadImage]);
+
+  const removeEditNoteImage = useCallback((index: number) => {
+    setEditingNoteImages(prev => prev.filter((_, i) => i !== index));
+  }, []);
 
   const categoryOptions = useMemo(() => Object.entries(CATEGORY_INFO).map(([key, info]) => ({ key, label: info.name, count: questionCounts.byCategory[key] || 0 })), [questionCounts.byCategory]);
   const subspecialtyOptions = useMemo(() => Object.entries(SUBSPECIALTY_INFO).map(([key, info]) => ({ key, label: info.name, count: questionCounts.bySubspecialty[key] || 0 })).filter(opt => (questionCounts.bySubspecialty[opt.key] || 0) > 0), [questionCounts.bySubspecialty]);
@@ -823,26 +895,152 @@ export default function Home() {
           {currentView === 'notes' && (
             <div className="space-y-6 animate-fadeIn">
               <h2 className="text-2xl sm:text-3xl font-bold text-gray-800">My Notes</h2>
-              <div className="relative">
-                <input type="text" placeholder="Search notes..." value={searchQuery} onChange={handleSearchChange} className="input-field pl-11" />
-                <div className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400"><Icons.Search /></div>
+              
+              {/* Search and Sort Controls */}
+              <div className="flex flex-col sm:flex-row gap-3">
+                <div className="relative flex-1">
+                  <input type="text" placeholder="Search notes..." value={searchQuery} onChange={handleSearchChange} className="input-field pl-11" />
+                  <div className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400"><Icons.Search /></div>
+                </div>
+                <div className="flex gap-2">
+                  <select 
+                    value={noteSortBy} 
+                    onChange={(e) => setNoteSortBy(e.target.value as 'date' | 'category' | 'title')}
+                    className="input-field py-2 px-3 text-sm"
+                  >
+                    <option value="date">Sort by Date</option>
+                    <option value="category">Sort by Category</option>
+                    <option value="title">Sort by Title</option>
+                  </select>
+                  <button 
+                    onClick={() => setNoteSortOrder(prev => prev === 'asc' ? 'desc' : 'asc')}
+                    className="btn-secondary px-3"
+                    title={noteSortOrder === 'asc' ? 'Ascending' : 'Descending'}
+                  >
+                    {noteSortOrder === 'asc' ? '↑' : '↓'}
+                  </button>
+                </div>
               </div>
+
               {filteredNotes.length === 0 ? (
                 <div className="text-center py-16"><p className="text-gray-400">No notes yet</p></div>
               ) : (
                 <div className="grid gap-4">
                   {filteredNotes.map(n => (
                     <div key={n.id} className="elevated-card p-4 sm:p-5">
-                      <div className="flex justify-between items-start mb-3">
-                        <h3 className="font-semibold text-gray-800 text-sm sm:text-base">{n.title}</h3>
-                        <button onClick={async () => { if (confirm('Delete this note?')) { await supabase.from('notes').delete().eq('id', n.id); loadData(); }}} className="text-gray-300 hover:text-red-500 transition-colors"><Icons.Trash /></button>
-                      </div>
-                      <p className="text-gray-600 text-sm">{n.content}</p>
-                      {n.images && n.images.length > 0 && <div className="flex flex-wrap gap-2 mt-3">{n.images.map((img, i) => <img key={i} src={img} alt="" className="w-16 h-16 object-cover rounded-lg cursor-pointer" onClick={() => setLightboxImage(img)} />)}</div>}
+                      {editingNoteId === n.id ? (
+                        /* Edit Mode */
+                        <div className="space-y-3">
+                          <div className="flex justify-between items-start">
+                            <h3 className="font-semibold text-gray-800 text-sm sm:text-base">{n.title}</h3>
+                            <div className="flex gap-2">
+                              <button onClick={cancelEditingNote} className="text-gray-400 hover:text-gray-600 text-sm">Cancel</button>
+                            </div>
+                          </div>
+                          
+                          {/* Mini toolbar */}
+                          <div className="flex items-center gap-1 p-1.5 bg-gray-50 border border-gray-200 rounded-lg">
+                            <button 
+                              onClick={() => {
+                                const textarea = document.getElementById(`edit-textarea-${n.id}`) as HTMLTextAreaElement;
+                                if (textarea) {
+                                  const start = textarea.selectionStart;
+                                  const before = editingNoteContent.substring(0, start);
+                                  const after = editingNoteContent.substring(start);
+                                  const newLine = before.endsWith('\n') || before.length === 0 ? '' : '\n';
+                                  setEditingNoteContent(before + newLine + '• ' + after);
+                                }
+                              }} 
+                              className="p-1.5 text-gray-500 hover:text-gray-700 hover:bg-gray-200 rounded" 
+                              title="Bullet"
+                            >
+                              <Icons.BulletList />
+                            </button>
+                            <div className="flex-1" />
+                            <span className="text-xs text-gray-400 mr-2 hidden sm:inline">Ctrl+V to paste</span>
+                            <button onClick={() => editFileInputRef.current?.click()} className="p-1.5 text-gray-500 hover:text-gray-700 hover:bg-gray-200 rounded" title="Add image">
+                              <Icons.Image />
+                            </button>
+                          </div>
+                          
+                          <textarea
+                            id={`edit-textarea-${n.id}`}
+                            value={editingNoteContent}
+                            onChange={(e) => setEditingNoteContent(e.target.value)}
+                            onPaste={(e) => {
+                              const items = e.clipboardData?.items;
+                              if (items) {
+                                for (let i = 0; i < items.length; i++) {
+                                  if (items[i].type.indexOf('image') !== -1) {
+                                    e.preventDefault();
+                                    const file = items[i].getAsFile();
+                                    if (file) handleEditImagePaste(file);
+                                    return;
+                                  }
+                                }
+                              }
+                            }}
+                            className="w-full p-3 bg-white border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-400 min-h-[120px] resize-y"
+                            placeholder="Edit your note..."
+                          />
+                          
+                          {editingNoteImages.length > 0 && (
+                            <div className="flex flex-wrap gap-2 p-3 bg-gray-50 rounded-lg">
+                              {editingNoteImages.map((img, i) => (
+                                <div key={i} className="relative group">
+                                  <img src={img} alt="" className="w-20 h-20 object-cover rounded-lg cursor-pointer border border-gray-200" onClick={() => setLightboxImage(img)} />
+                                  <button onClick={() => removeEditNoteImage(i)} className="absolute -top-2 -right-2 w-5 h-5 bg-red-500 text-white rounded-full text-xs flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">×</button>
+                                </div>
+                              ))}
+                            </div>
+                          )}
+                          
+                          <div className="flex justify-end gap-2">
+                            <button onClick={cancelEditingNote} className="btn-secondary text-sm py-2 px-4">Cancel</button>
+                            <button onClick={saveEditingNote} disabled={savingEditNote} className="btn-primary text-sm py-2 px-4 flex items-center gap-2">
+                              <Icons.Save /> {savingEditNote ? 'Saving...' : 'Save'}
+                            </button>
+                          </div>
+                        </div>
+                      ) : (
+                        /* View Mode */
+                        <>
+                          <div className="flex justify-between items-start mb-3">
+                            <div>
+                              <h3 className="font-semibold text-gray-800 text-sm sm:text-base">{n.title}</h3>
+                              <div className="flex items-center gap-2 mt-1">
+                                {n.category && (
+                                  <span className="text-xs px-2 py-0.5 bg-blue-50 text-blue-600 rounded">{CATEGORY_INFO[n.category as keyof typeof CATEGORY_INFO]?.name || n.category}</span>
+                                )}
+                                <span className="text-xs text-gray-400">{new Date(n.updated_at).toLocaleDateString()}</span>
+                              </div>
+                            </div>
+                            <div className="flex items-center gap-1">
+                              <button onClick={() => startEditingNote(n)} className="p-1.5 text-gray-400 hover:text-blue-500 transition-colors" title="Edit">
+                                <Icons.Edit />
+                              </button>
+                              <button onClick={async () => { if (confirm('Delete this note?')) { await supabase.from('notes').delete().eq('id', n.id); loadData(); }}} className="p-1.5 text-gray-400 hover:text-red-500 transition-colors" title="Delete">
+                                <Icons.Trash />
+                              </button>
+                            </div>
+                          </div>
+                          <p className="text-gray-600 text-sm whitespace-pre-wrap">{n.content}</p>
+                          {n.images && n.images.length > 0 && (
+                            <div className="flex flex-wrap gap-2 mt-3">
+                              {n.images.map((img, i) => (
+                                <img key={i} src={img} alt="" className="w-20 h-20 object-cover rounded-lg cursor-pointer border border-gray-200 hover:border-blue-400 transition-colors" onClick={() => setLightboxImage(img)} />
+                              ))}
+                            </div>
+                          )}
+                        </>
+                      )}
                     </div>
                   ))}
                 </div>
               )}
+              
+              {/* Hidden file input for edit mode */}
+              <input ref={editFileInputRef} type="file" accept="image/*" multiple onChange={handleEditImageUpload} className="hidden" />
             </div>
           )}
 
