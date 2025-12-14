@@ -595,9 +595,7 @@ export default function Home() {
         <div className="flex flex-col h-full">
           <div className="p-6">
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center text-white">
-                <Icons.Sparkles />
-              </div>
+              <img src="/logo.png" alt="Logo" className="w-10 h-10 rounded-xl" />
               <div>
                 <h1 className="text-lg font-bold text-gray-800">Diagnostic</h1>
                 <p className="text-sm font-semibold text-blue-600">Excellence</p>
