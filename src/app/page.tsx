@@ -5,6 +5,16 @@ import { createClient } from '@/lib/supabase';
 import { useAuth } from '@/lib/auth-context';
 import AuthForm from './auth-form';
 import { Question, Note, UserProgress, QuestionCategory, Subspecialty, CATEGORY_INFO, SUBSPECIALTY_INFO } from '@/types';
+import { 
+  calculateNextReview, 
+  filterDueForReview, 
+  filterPreviouslyWrong, 
+  sortByReviewPriority,
+  getMasteryLabel,
+  getNextReviewLabel,
+  SpacedRepetitionData,
+  isDueForReview
+} from '@/lib/spaced-repetition';
 
 // Dynamic import for RichTextEditor (client-side only to avoid SSR issues with Tiptap)
 const RichTextEditor = dynamic(() => import('@/components/RichTextEditor'), { 
@@ -37,6 +47,12 @@ const Icons = {
   ChevronUp: () => <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M4.5 15.75l7.5-7.5 7.5 7.5" /></svg>,
   Logout: () => <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth={1.5} viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M15.75 9V5.25A2.25 2.25 0 0013.5 3h-6a2.25 2.25 0 00-2.25 2.25v13.5A2.25 2.25 0 007.5 21h6a2.25 2.25 0 002.25-2.25V15M12 9l-3 3m0 0l3 3m-3-3h12.75" /></svg>,
   User: () => <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth={1.5} viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM4.501 20.118a7.5 7.5 0 0114.998 0A17.933 17.933 0 0112 21.75c-2.676 0-5.216-.584-7.499-1.632z" /></svg>,
+  Brain: () => <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth={1.5} viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09z" /></svg>,
+  Trophy: () => <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth={1.5} viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M16.5 18.75h-9m9 0a3 3 0 013 3h-15a3 3 0 013-3m9 0v-4.5A.75.75 0 0015.75 12H8.25a.75.75 0 00-.75.75v4.5m9-4.5a3 3 0 00-3-3H9.75a3 3 0 00-3 3m10.5-6V6a2.25 2.25 0 00-2.25-2.25H9a2.25 2.25 0 00-2.25 2.25v.75m10.5 0h1.5a1.5 1.5 0 011.5 1.5v1.5m-13.5-3h-1.5a1.5 1.5 0 00-1.5 1.5v1.5" /></svg>,
+  Filter: () => <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth={1.5} viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M12 3c2.755 0 5.455.232 8.083.678.533.09.917.556.917 1.096v1.044a2.25 2.25 0 01-.659 1.591l-5.432 5.432a2.25 2.25 0 00-.659 1.591v2.927a2.25 2.25 0 01-1.244 2.013L9.75 21v-6.568a2.25 2.25 0 00-.659-1.591L3.659 7.409A2.25 2.25 0 013 5.818V4.774c0-.54.384-1.006.917-1.096A48.32 48.32 0 0112 3z" /></svg>,
+  Clock: () => <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth={1.5} viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>,
+  XCircle: () => <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth={1.5} viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M9.75 9.75l4.5 4.5m0-4.5l-4.5 4.5M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>,
+  Refresh: () => <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth={1.5} viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0l3.181 3.183a8.25 8.25 0 0013.803-3.7M4.031 9.865a8.25 8.25 0 0113.803-3.7l3.181 3.182m0-4.991v4.99" /></svg>,
 };
 
 const NavButton = memo(({ icon, label, active, onClick }: { icon: React.ReactNode; label: string; active?: boolean; onClick: () => void }) => (
@@ -169,6 +185,7 @@ const NoteEditor = memo(({
 NoteEditor.displayName = 'NoteEditor';
 
 type View = 'dashboard' | 'quiz-setup' | 'practice' | 'notes' | 'stats' | 'question-list';
+type QuizMode = 'all' | 'spaced' | 'wrong-only' | 'unmastered';
 
 export default function Home() {
   const { user, loading: authLoading, signOut } = useAuth();
@@ -194,6 +211,7 @@ export default function Home() {
   const [editingNoteId, setEditingNoteId] = useState<string | null>(null);
   const [editingNoteContent, setEditingNoteContent] = useState('');
   const [savingEditNote, setSavingEditNote] = useState(false);
+  const [quizMode, setQuizMode] = useState<QuizMode>('all');
   
   const supabase = useMemo(() => createClient(), []);
 
@@ -274,40 +292,143 @@ export default function Home() {
     return { byCategory, bySubspecialty };
   }, [questions]);
 
-  const availableQuestions = useMemo(() => questions.filter(q => {
-    const categoryMatch = selectedCategories.length === 0 || selectedCategories.includes(q.category);
-    const subspecialtyMatch = selectedSubspecialties.length === 0 || q.subspecialties?.some(sub => selectedSubspecialties.includes(sub));
-    return categoryMatch && subspecialtyMatch;
-  }), [questions, selectedCategories, selectedSubspecialties]);
+  // Progress map for efficient lookups
+  const progressMap = useMemo(() => {
+    const map = new Map<string, UserProgress>();
+    progress.forEach(p => map.set(p.question_id, p));
+    return map;
+  }, [progress]);
+
+  // Spaced repetition data map
+  const srDataMap = useMemo(() => {
+    const map = new Map<string, SpacedRepetitionData>();
+    progress.forEach(p => {
+      map.set(p.question_id, {
+        ease_factor: p.ease_factor ?? 2.5,
+        interval: p.interval ?? 1,
+        next_review: p.next_review ?? new Date().toISOString(),
+        repetitions: p.repetitions ?? 0,
+        correct_streak: p.correct_streak ?? 0,
+        total_correct: p.total_correct ?? 0,
+        mastered: p.mastered ?? false,
+      });
+    });
+    return map;
+  }, [progress]);
+
+  // Computed stats for spaced repetition
+  const srStats = useMemo(() => {
+    const dueCount = questions.filter(q => {
+      const sr = srDataMap.get(q.id);
+      if (!sr) return true; // Never answered = due
+      if (sr.mastered) return false;
+      return isDueForReview(sr.next_review);
+    }).length;
+    
+    const masteredCount = progress.filter(p => p.mastered).length;
+    const wrongCount = questions.filter(q => {
+      const p = progressMap.get(q.id);
+      if (!p) return false;
+      return !p.answered_correctly || (p.attempts ?? 1) > (p.total_correct ?? 0);
+    }).length;
+    
+    return { dueCount, masteredCount, wrongCount };
+  }, [questions, progress, srDataMap, progressMap]);
+
+  const availableQuestions = useMemo(() => {
+    let filtered = questions.filter(q => {
+      const categoryMatch = selectedCategories.length === 0 || selectedCategories.includes(q.category);
+      const subspecialtyMatch = selectedSubspecialties.length === 0 || q.subspecialties?.some(sub => selectedSubspecialties.includes(sub));
+      return categoryMatch && subspecialtyMatch;
+    });
+
+    // Apply quiz mode filtering
+    switch (quizMode) {
+      case 'spaced':
+        filtered = filterDueForReview(filtered, srDataMap, false);
+        break;
+      case 'wrong-only':
+        filtered = filterPreviouslyWrong(filtered, progressMap as Map<string, { answered_correctly: boolean; total_correct: number; attempts: number }>);
+        break;
+      case 'unmastered':
+        filtered = filtered.filter(q => {
+          const sr = srDataMap.get(q.id);
+          return !sr?.mastered;
+        });
+        break;
+    }
+
+    return filtered;
+  }, [questions, selectedCategories, selectedSubspecialties, quizMode, srDataMap, progressMap]);
 
   const handleAnswer = useCallback(async (answer: string) => {
     if (showExplanation || !currentQuestion || !user) return;
     setSelectedAnswer(answer);
     setShowExplanation(true);
+    
+    const isCorrect = answer === currentQuestion.correct_answer;
+    const existingProgress = progressMap.get(currentQuestion.id);
+    
+    // Calculate spaced repetition data
+    const srData = calculateNextReview(
+      existingProgress ? {
+        ease_factor: existingProgress.ease_factor,
+        interval: existingProgress.interval,
+        next_review: existingProgress.next_review,
+        repetitions: existingProgress.repetitions,
+        correct_streak: existingProgress.correct_streak,
+        total_correct: existingProgress.total_correct,
+        mastered: existingProgress.mastered,
+      } : {},
+      isCorrect
+    );
+    
     try {
       await supabase.from('user_progress').upsert({
-        user_id: user.id, question_id: currentQuestion.id, answered_correctly: answer === currentQuestion.correct_answer,
-        user_answer: answer, attempts: 1, last_attempted: new Date().toISOString(),
+        user_id: user.id,
+        question_id: currentQuestion.id,
+        answered_correctly: isCorrect,
+        user_answer: answer,
+        attempts: (existingProgress?.attempts ?? 0) + 1,
+        last_attempted: new Date().toISOString(),
+        // Spaced repetition fields
+        ease_factor: srData.ease_factor,
+        interval: srData.interval,
+        next_review: srData.next_review,
+        repetitions: srData.repetitions,
+        // Mastery fields
+        correct_streak: srData.correct_streak,
+        total_correct: srData.total_correct,
+        mastered: srData.mastered,
       });
       const { data } = await supabase.from('user_progress').select('*').eq('user_id', user.id);
       if (data) setProgress(data);
     } catch (e) { console.error(e); }
-  }, [showExplanation, currentQuestion, supabase, user]);
+  }, [showExplanation, currentQuestion, supabase, user, progressMap]);
 
   const goToQuestion = useCallback((i: number) => {
     if (i >= 0 && i < quizQuestions.length) { setCurrentQuestionIndex(i); setSelectedAnswer(null); setShowExplanation(false); }
   }, [quizQuestions.length]);
 
   const startQuiz = useCallback(() => {
-    const shuffled = [...availableQuestions].sort(() => Math.random() - 0.5);
-    setQuizQuestions(shuffled);
+    let quizQs = [...availableQuestions];
+    
+    // Sort by spaced repetition priority if in spaced mode
+    if (quizMode === 'spaced') {
+      quizQs = sortByReviewPriority(quizQs, srDataMap);
+    } else {
+      // Shuffle for other modes
+      quizQs.sort(() => Math.random() - 0.5);
+    }
+    
+    setQuizQuestions(quizQs);
     setCurrentQuestionIndex(0);
     setSelectedAnswer(null);
     setShowExplanation(false);
     setShowNotePanel(false);
     setCurrentView('practice');
     setSidebarOpen(false);
-  }, [availableQuestions]);
+  }, [availableQuestions, quizMode, srDataMap]);
 
   const uploadImage = useCallback(async (file: File): Promise<string | null> => {
     const ext = file.name.split('.').pop();
@@ -430,6 +551,14 @@ export default function Home() {
               <span className="font-bold text-gray-800">{questions.length}</span>
             </div>
             <div className="flex items-center justify-between text-sm mt-1">
+              <span className="text-gray-500">Mastered</span>
+              <span className="font-bold text-green-600">{srStats.masteredCount}</span>
+            </div>
+            <div className="flex items-center justify-between text-sm mt-1">
+              <span className="text-gray-500">Due for Review</span>
+              <span className="font-bold text-purple-600">{srStats.dueCount}</span>
+            </div>
+            <div className="flex items-center justify-between text-sm mt-1">
               <span className="text-gray-500">Notes Created</span>
               <span className="font-bold text-gray-800">{notes.length}</span>
             </div>
@@ -483,13 +612,98 @@ export default function Home() {
               
               <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
                 <StatCard label="Total Questions" value={stats.total} gradient="stat-gradient-blue" />
-                <StatCard label="Attempted" value={stats.attempted} gradient="stat-gradient-purple" />
-                <StatCard label="Correct" value={stats.correct} gradient="stat-gradient-green" />
+                <StatCard label="Mastered" value={srStats.masteredCount} gradient="stat-gradient-green" />
+                <StatCard label="Due for Review" value={srStats.dueCount} gradient="stat-gradient-purple" />
                 <StatCard label="Accuracy" value={`${stats.accuracy}%`} gradient="stat-gradient-amber" />
               </div>
               
+              {/* Quick Action Cards */}
+              <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                {srStats.dueCount > 0 && (
+                  <button 
+                    onClick={() => { setQuizMode('spaced'); setSelectedCategories([]); setSelectedSubspecialties([]); setCurrentView('quiz-setup'); }}
+                    className="elevated-card p-5 text-left hover:shadow-lg transition-all group"
+                  >
+                    <div className="flex items-center gap-3 mb-2">
+                      <div className="w-10 h-10 rounded-xl bg-purple-100 flex items-center justify-center text-purple-600 group-hover:bg-purple-600 group-hover:text-white transition-colors">
+                        <Icons.Clock />
+                      </div>
+                      <div>
+                        <h4 className="font-bold text-gray-800">Spaced Review</h4>
+                        <p className="text-sm text-purple-600 font-medium">{srStats.dueCount} questions due</p>
+                      </div>
+                    </div>
+                    <p className="text-sm text-gray-500">Review questions at optimal intervals for long-term retention</p>
+                  </button>
+                )}
+                
+                {srStats.wrongCount > 0 && (
+                  <button 
+                    onClick={() => { setQuizMode('wrong-only'); setSelectedCategories([]); setSelectedSubspecialties([]); setCurrentView('quiz-setup'); }}
+                    className="elevated-card p-5 text-left hover:shadow-lg transition-all group"
+                  >
+                    <div className="flex items-center gap-3 mb-2">
+                      <div className="w-10 h-10 rounded-xl bg-red-100 flex items-center justify-center text-red-600 group-hover:bg-red-600 group-hover:text-white transition-colors">
+                        <Icons.XCircle />
+                      </div>
+                      <div>
+                        <h4 className="font-bold text-gray-800">Review Mistakes</h4>
+                        <p className="text-sm text-red-600 font-medium">{srStats.wrongCount} to review</p>
+                      </div>
+                    </div>
+                    <p className="text-sm text-gray-500">Focus on questions you previously got wrong</p>
+                  </button>
+                )}
+                
+                <button 
+                  onClick={() => { setQuizMode('all'); setSelectedCategories([]); setSelectedSubspecialties([]); setCurrentView('quiz-setup'); }}
+                  className="elevated-card p-5 text-left hover:shadow-lg transition-all group"
+                >
+                  <div className="flex items-center gap-3 mb-2">
+                    <div className="w-10 h-10 rounded-xl bg-blue-100 flex items-center justify-center text-blue-600 group-hover:bg-blue-600 group-hover:text-white transition-colors">
+                      <Icons.Play />
+                    </div>
+                    <div>
+                      <h4 className="font-bold text-gray-800">Practice All</h4>
+                      <p className="text-sm text-blue-600 font-medium">{questions.length} questions</p>
+                    </div>
+                  </div>
+                  <p className="text-sm text-gray-500">Practice all questions in random order</p>
+                </button>
+              </div>
+              
+              {/* Mastery Progress */}
               <div className="elevated-card p-4 sm:p-6">
-                <h3 className="text-lg font-bold text-gray-800 mb-4">Quick Start</h3>
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="text-lg font-bold text-gray-800">Mastery Progress</h3>
+                  <span className="text-sm text-gray-500">
+                    {Math.round((srStats.masteredCount / Math.max(questions.length, 1)) * 100)}% complete
+                  </span>
+                </div>
+                <div className="h-3 bg-gray-100 rounded-full overflow-hidden mb-4">
+                  <div 
+                    className="h-full bg-gradient-to-r from-green-400 to-green-600 rounded-full transition-all duration-500"
+                    style={{ width: `${(srStats.masteredCount / Math.max(questions.length, 1)) * 100}%` }}
+                  />
+                </div>
+                <div className="flex flex-wrap gap-4 text-sm">
+                  <div className="flex items-center gap-2">
+                    <span className="w-3 h-3 rounded-full bg-green-500"></span>
+                    <span className="text-gray-600">Mastered: {srStats.masteredCount}</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className="w-3 h-3 rounded-full bg-amber-500"></span>
+                    <span className="text-gray-600">In Progress: {stats.attempted - srStats.masteredCount}</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className="w-3 h-3 rounded-full bg-gray-300"></span>
+                    <span className="text-gray-600">Not Started: {questions.length - stats.attempted}</span>
+                  </div>
+                </div>
+              </div>
+              
+              <div className="elevated-card p-4 sm:p-6">
+                <h3 className="text-lg font-bold text-gray-800 mb-4">By Category</h3>
                 <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-3">
                   {Object.entries(CATEGORY_INFO).map(([key, info]) => {
                     const count = questionCounts.byCategory[key] || 0;
@@ -524,7 +738,91 @@ export default function Home() {
             <div className="max-w-2xl mx-auto space-y-6 animate-fadeIn">
               <div>
                 <h2 className="text-2xl sm:text-3xl font-bold text-gray-800">Create Quiz</h2>
-                <p className="text-gray-500 mt-1">Select topics to practice</p>
+                <p className="text-gray-500 mt-1">Select topics and study mode</p>
+              </div>
+              
+              {/* Study Mode Selection */}
+              <div className="elevated-card p-4 sm:p-6 space-y-4">
+                <div className="flex items-center gap-2 mb-2">
+                  <Icons.Brain />
+                  <span className="text-sm font-semibold text-gray-700">Study Mode</span>
+                </div>
+                <div className="grid grid-cols-2 gap-3">
+                  <button
+                    onClick={() => setQuizMode('all')}
+                    className={`p-4 rounded-xl border-2 transition-all text-left ${
+                      quizMode === 'all' 
+                        ? 'border-blue-500 bg-blue-50' 
+                        : 'border-gray-200 hover:border-gray-300 bg-white'
+                    }`}
+                  >
+                    <div className="flex items-center gap-2 mb-1">
+                      <Icons.List />
+                      <span className="font-semibold text-gray-800">All Questions</span>
+                    </div>
+                    <p className="text-xs text-gray-500">Random order, all questions</p>
+                    <p className="text-sm font-bold text-gray-600 mt-2">{questions.length} total</p>
+                  </button>
+                  
+                  <button
+                    onClick={() => setQuizMode('spaced')}
+                    className={`p-4 rounded-xl border-2 transition-all text-left ${
+                      quizMode === 'spaced' 
+                        ? 'border-purple-500 bg-purple-50' 
+                        : 'border-gray-200 hover:border-gray-300 bg-white'
+                    }`}
+                  >
+                    <div className="flex items-center gap-2 mb-1">
+                      <Icons.Clock />
+                      <span className="font-semibold text-gray-800">Spaced Review</span>
+                    </div>
+                    <p className="text-xs text-gray-500">Due for review (SM-2)</p>
+                    <p className="text-sm font-bold text-purple-600 mt-2">{srStats.dueCount} due</p>
+                  </button>
+                  
+                  <button
+                    onClick={() => setQuizMode('wrong-only')}
+                    className={`p-4 rounded-xl border-2 transition-all text-left ${
+                      quizMode === 'wrong-only' 
+                        ? 'border-red-500 bg-red-50' 
+                        : 'border-gray-200 hover:border-gray-300 bg-white'
+                    }`}
+                  >
+                    <div className="flex items-center gap-2 mb-1">
+                      <Icons.XCircle />
+                      <span className="font-semibold text-gray-800">Previously Wrong</span>
+                    </div>
+                    <p className="text-xs text-gray-500">Questions you got wrong</p>
+                    <p className="text-sm font-bold text-red-600 mt-2">{srStats.wrongCount} to review</p>
+                  </button>
+                  
+                  <button
+                    onClick={() => setQuizMode('unmastered')}
+                    className={`p-4 rounded-xl border-2 transition-all text-left ${
+                      quizMode === 'unmastered' 
+                        ? 'border-amber-500 bg-amber-50' 
+                        : 'border-gray-200 hover:border-gray-300 bg-white'
+                    }`}
+                  >
+                    <div className="flex items-center gap-2 mb-1">
+                      <Icons.Trophy />
+                      <span className="font-semibold text-gray-800">Not Mastered</span>
+                    </div>
+                    <p className="text-xs text-gray-500">Exclude mastered questions</p>
+                    <p className="text-sm font-bold text-amber-600 mt-2">{questions.length - srStats.masteredCount} remaining</p>
+                  </button>
+                </div>
+                
+                {/* Mastery Info Box */}
+                <div className="p-3 bg-gray-50 rounded-xl mt-2">
+                  <div className="flex items-center justify-between text-sm">
+                    <span className="text-gray-600">🏆 Mastered questions</span>
+                    <span className="font-bold text-green-600">{srStats.masteredCount} / {questions.length}</span>
+                  </div>
+                  <p className="text-xs text-gray-400 mt-1">
+                    A question is mastered when answered correctly 3 times with at least 2 correct in a row
+                  </p>
+                </div>
               </div>
               
               <div className="elevated-card p-4 sm:p-6 space-y-6">
@@ -633,6 +931,66 @@ export default function Home() {
                           </div>
                           {currentQuestion?.explanation && <p className="text-gray-600 leading-relaxed text-sm sm:text-base">{currentQuestion.explanation}</p>}
                         </div>
+                        
+                        {/* Mastery & Spaced Repetition Info */}
+                        {currentQuestion && (() => {
+                          const sr = srDataMap.get(currentQuestion.id);
+                          const mastery = getMasteryLabel(
+                            sr?.total_correct ?? 0,
+                            sr?.correct_streak ?? 0,
+                            sr?.mastered ?? false
+                          );
+                          const nextReview = getNextReviewLabel(sr?.next_review);
+                          
+                          return (
+                            <div className="mt-3 p-3 bg-gray-50 rounded-xl flex flex-wrap items-center gap-3 text-sm">
+                              {/* Mastery Status */}
+                              <div className="flex items-center gap-2">
+                                <Icons.Trophy />
+                                <span className={`font-medium ${
+                                  mastery.color === 'green' ? 'text-green-600' :
+                                  mastery.color === 'blue' ? 'text-blue-600' :
+                                  mastery.color === 'amber' ? 'text-amber-600' :
+                                  'text-gray-500'
+                                }`}>
+                                  {mastery.label}
+                                </span>
+                                {!sr?.mastered && (
+                                  <div className="w-16 h-1.5 bg-gray-200 rounded-full overflow-hidden">
+                                    <div 
+                                      className={`h-full rounded-full transition-all ${
+                                        mastery.color === 'blue' ? 'bg-blue-500' :
+                                        mastery.color === 'amber' ? 'bg-amber-500' :
+                                        'bg-gray-400'
+                                      }`}
+                                      style={{ width: `${mastery.progress}%` }}
+                                    />
+                                  </div>
+                                )}
+                              </div>
+                              
+                              {/* Next Review */}
+                              <div className="flex items-center gap-2 text-gray-500">
+                                <Icons.Clock />
+                                <span>Next review: {nextReview}</span>
+                              </div>
+                              
+                              {/* Streak indicator */}
+                              {(sr?.correct_streak ?? 0) > 0 && (
+                                <div className="flex items-center gap-1 text-orange-500">
+                                  <span>🔥</span>
+                                  <span className="font-medium">{sr?.correct_streak} streak</span>
+                                </div>
+                              )}
+                              
+                              {sr?.mastered && (
+                                <span className="px-2 py-0.5 bg-green-100 text-green-700 rounded-full text-xs font-medium">
+                                  ✓ Mastered
+                                </span>
+                              )}
+                            </div>
+                          );
+                        })()}
                       </div>
                     )}
                     
@@ -804,9 +1162,64 @@ export default function Home() {
               <h2 className="text-2xl sm:text-3xl font-bold text-gray-800">Statistics</h2>
               <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
                 <StatCard label="Total Questions" value={stats.total} gradient="stat-gradient-blue" />
-                <StatCard label="Attempted" value={stats.attempted} gradient="stat-gradient-purple" />
-                <StatCard label="Correct" value={stats.correct} gradient="stat-gradient-green" />
+                <StatCard label="Mastered" value={srStats.masteredCount} gradient="stat-gradient-green" />
+                <StatCard label="Due for Review" value={srStats.dueCount} gradient="stat-gradient-purple" />
                 <StatCard label="Accuracy" value={`${stats.accuracy}%`} gradient="stat-gradient-amber" />
+              </div>
+              
+              {/* Mastery Overview */}
+              <div className="elevated-card p-4 sm:p-6">
+                <h3 className="text-lg font-bold text-gray-800 mb-4">Mastery Overview</h3>
+                <div className="grid grid-cols-3 gap-4 mb-4">
+                  <div className="text-center p-4 bg-green-50 rounded-xl">
+                    <p className="text-3xl font-bold text-green-600">{srStats.masteredCount}</p>
+                    <p className="text-sm text-gray-600">Mastered</p>
+                  </div>
+                  <div className="text-center p-4 bg-amber-50 rounded-xl">
+                    <p className="text-3xl font-bold text-amber-600">{stats.attempted - srStats.masteredCount}</p>
+                    <p className="text-sm text-gray-600">In Progress</p>
+                  </div>
+                  <div className="text-center p-4 bg-gray-50 rounded-xl">
+                    <p className="text-3xl font-bold text-gray-600">{questions.length - stats.attempted}</p>
+                    <p className="text-sm text-gray-600">Not Started</p>
+                  </div>
+                </div>
+                <div className="h-4 bg-gray-100 rounded-full overflow-hidden flex">
+                  <div 
+                    className="h-full bg-green-500 transition-all"
+                    style={{ width: `${(srStats.masteredCount / Math.max(questions.length, 1)) * 100}%` }}
+                  />
+                  <div 
+                    className="h-full bg-amber-500 transition-all"
+                    style={{ width: `${((stats.attempted - srStats.masteredCount) / Math.max(questions.length, 1)) * 100}%` }}
+                  />
+                </div>
+                <p className="text-xs text-gray-500 mt-2 text-center">
+                  Mastery requires 3 correct answers with at least 2 consecutive correct answers (double streak)
+                </p>
+              </div>
+              
+              {/* Spaced Repetition Stats */}
+              <div className="elevated-card p-4 sm:p-6">
+                <h3 className="text-lg font-bold text-gray-800 mb-4">Spaced Repetition</h3>
+                <div className="grid sm:grid-cols-2 gap-4">
+                  <div className="p-4 bg-purple-50 rounded-xl">
+                    <div className="flex items-center gap-2 mb-2">
+                      <Icons.Clock />
+                      <span className="font-medium text-gray-700">Due for Review</span>
+                    </div>
+                    <p className="text-2xl font-bold text-purple-600">{srStats.dueCount}</p>
+                    <p className="text-sm text-gray-500 mt-1">Questions ready for optimal review</p>
+                  </div>
+                  <div className="p-4 bg-red-50 rounded-xl">
+                    <div className="flex items-center gap-2 mb-2">
+                      <Icons.XCircle />
+                      <span className="font-medium text-gray-700">Previously Wrong</span>
+                    </div>
+                    <p className="text-2xl font-bold text-red-600">{srStats.wrongCount}</p>
+                    <p className="text-sm text-gray-500 mt-1">Questions to reinforce</p>
+                  </div>
+                </div>
               </div>
               
               <div className="elevated-card p-4 sm:p-6">

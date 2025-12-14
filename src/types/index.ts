@@ -105,4 +105,13 @@ export interface UserProgress {
   user_answer: string;
   attempts: number;
   last_attempted: string;
+  // Spaced repetition fields (SM-2 algorithm)
+  ease_factor: number;      // Default 2.5, min 1.3
+  interval: number;         // Days until next review
+  next_review: string;      // ISO date string
+  repetitions: number;      // Successful repetitions in a row
+  // Mastery tracking
+  correct_streak: number;   // Current consecutive correct answers
+  total_correct: number;    // Total times answered correctly
+  mastered: boolean;        // True if mastered (3x correct with double streak)
 }

@@ -35,7 +35,7 @@ CREATE TABLE notes (
   updated_at TIMESTAMPTZ DEFAULT NOW()
 );
 
--- User progress table
+-- User progress table with Spaced Repetition and Mastery tracking
 CREATE TABLE user_progress (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   user_id TEXT NOT NULL DEFAULT 'default',
@@ -46,6 +46,15 @@ CREATE TABLE user_progress (
   attempts INTEGER DEFAULT 1,
   last_attempted TIMESTAMPTZ DEFAULT NOW(),
   created_at TIMESTAMPTZ DEFAULT NOW(),
+  -- Spaced repetition fields (SM-2 algorithm)
+  ease_factor DECIMAL(3,2) DEFAULT 2.50,
+  interval INTEGER DEFAULT 1,
+  next_review TIMESTAMPTZ DEFAULT NOW(),
+  repetitions INTEGER DEFAULT 0,
+  -- Mastery tracking
+  correct_streak INTEGER DEFAULT 0,
+  total_correct INTEGER DEFAULT 0,
+  mastered BOOLEAN DEFAULT FALSE,
   UNIQUE(user_id, question_id)
 );
 
