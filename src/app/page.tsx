@@ -478,7 +478,7 @@ export default function Home() {
                           <h3 className="font-semibold text-gray-800">Notes</h3>
                           <button onClick={() => setShowNotePanel(false)} className="p-1.5 hover:bg-gray-100 rounded-lg transition-colors text-gray-400"><Icons.X /></button>
                         </div>
-                        <textarea value={currentNote} onChange={handleNoteChange} placeholder="Add your notes here..." className="input-field h-40 resize-none text-sm" />
+                        <textarea value={currentNote} onChange={handleNoteChange} placeholder="Add your notes here..." className="input-field h-40 resize-none text-sm text-black placeholder:text-gray-400" />
                         <div className="mt-3">
                           <input ref={fileInputRef} type="file" accept="image/*" multiple onChange={handleImageUpload} className="hidden" />
                           <button onClick={() => fileInputRef.current?.click()} disabled={uploadingImage} className="btn-secondary flex items-center gap-2 text-sm w-full justify-center">
