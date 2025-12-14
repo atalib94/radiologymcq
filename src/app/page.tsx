@@ -44,12 +44,7 @@ const Lightbox = memo(({ src, onClose }: { src: string; onClose: () => void }) =
 ));
 Lightbox.displayName = 'Lightbox';
 
-const ChipSelect = memo(({ options, selected, onChange, label }: { 
-  options: { key: string; label: string; count?: number }[]; 
-  selected: string[]; 
-  onChange: (selected: string[]) => void;
-  label: string;
-}) => {
+const ChipSelect = memo(({ options, selected, onChange, label }: { options: { key: string; label: string; count?: number }[]; selected: string[]; onChange: (selected: string[]) => void; label: string; }) => {
   const toggle = (key: string) => onChange(selected.includes(key) ? selected.filter(k => k !== key) : [...selected, key]);
   return (
     <div className="space-y-3">
@@ -61,12 +56,7 @@ const ChipSelect = memo(({ options, selected, onChange, label }: {
         </div>
       </div>
       <div className="flex flex-wrap gap-2">
-        {options.map(opt => (
-          <button key={opt.key} onClick={() => toggle(opt.key)}
-            className={`chip ${selected.includes(opt.key) ? 'active' : ''}`}>
-            {opt.label}
-          </button>
-        ))}
+        {options.map(opt => (<button key={opt.key} onClick={() => toggle(opt.key)} className={`chip ${selected.includes(opt.key) ? 'active' : ''}`}>{opt.label}</button>))}
       </div>
     </div>
   );
@@ -119,16 +109,9 @@ export default function Home() {
   const currentQuestion = quizQuestions[currentQuestionIndex];
   const currentQuestionNote = useMemo(() => currentQuestion ? notes.find(n => n.question_id === currentQuestion.id) || null : null, [notes, currentQuestion]);
 
-  useEffect(() => {
-    setCurrentNote(currentQuestionNote?.content || '');
-    setCurrentNoteImages(currentQuestionNote?.images || []);
-  }, [currentQuestionNote]);
+  useEffect(() => { setCurrentNote(currentQuestionNote?.content || ''); setCurrentNoteImages(currentQuestionNote?.images || []); }, [currentQuestionNote]);
 
-  const filteredNotes = useMemo(() => {
-    if (!searchQuery) return notes;
-    const q = searchQuery.toLowerCase();
-    return notes.filter(n => n.title.toLowerCase().includes(q) || n.content.toLowerCase().includes(q));
-  }, [notes, searchQuery]);
+  const filteredNotes = useMemo(() => { if (!searchQuery) return notes; const q = searchQuery.toLowerCase(); return notes.filter(n => n.title.toLowerCase().includes(q) || n.content.toLowerCase().includes(q)); }, [notes, searchQuery]);
 
   const stats = useMemo(() => {
     const attempted = progress.length;
@@ -154,10 +137,7 @@ export default function Home() {
   const questionCounts = useMemo(() => {
     const byCategory: Record<string, number> = {};
     const bySubspecialty: Record<string, number> = {};
-    questions.forEach(q => {
-      byCategory[q.category] = (byCategory[q.category] || 0) + 1;
-      q.subspecialties?.forEach(sub => { bySubspecialty[sub] = (bySubspecialty[sub] || 0) + 1; });
-    });
+    questions.forEach(q => { byCategory[q.category] = (byCategory[q.category] || 0) + 1; q.subspecialties?.forEach(sub => { bySubspecialty[sub] = (bySubspecialty[sub] || 0) + 1; }); });
     return { byCategory, bySubspecialty };
   }, [questions]);
 
@@ -172,28 +152,17 @@ export default function Home() {
     setSelectedAnswer(answer);
     setShowExplanation(true);
     try {
-      await supabase.from('user_progress').upsert({
-        user_id: 'default', question_id: currentQuestion.id, answered_correctly: answer === currentQuestion.correct_answer,
-        user_answer: answer, attempts: 1, last_attempted: new Date().toISOString(),
-      });
+      await supabase.from('user_progress').upsert({ user_id: 'default', question_id: currentQuestion.id, answered_correctly: answer === currentQuestion.correct_answer, user_answer: answer, attempts: 1, last_attempted: new Date().toISOString() });
       const { data } = await supabase.from('user_progress').select('*');
       if (data) setProgress(data);
     } catch (e) { console.error(e); }
   }, [showExplanation, currentQuestion, supabase]);
 
-  const goToQuestion = useCallback((i: number) => {
-    if (i >= 0 && i < quizQuestions.length) { setCurrentQuestionIndex(i); setSelectedAnswer(null); setShowExplanation(false); }
-  }, [quizQuestions.length]);
+  const goToQuestion = useCallback((i: number) => { if (i >= 0 && i < quizQuestions.length) { setCurrentQuestionIndex(i); setSelectedAnswer(null); setShowExplanation(false); } }, [quizQuestions.length]);
 
   const startQuiz = useCallback(() => {
     const shuffled = [...availableQuestions].sort(() => Math.random() - 0.5);
-    setQuizQuestions(shuffled);
-    setCurrentQuestionIndex(0);
-    setSelectedAnswer(null);
-    setShowExplanation(false);
-    setShowNotePanel(false);
-    setCurrentView('practice');
-    setSidebarOpen(false);
+    setQuizQuestions(shuffled); setCurrentQuestionIndex(0); setSelectedAnswer(null); setShowExplanation(false); setShowNotePanel(false); setCurrentView('practice'); setSidebarOpen(false);
   }, [availableQuestions]);
 
   const uploadImage = useCallback(async (file: File): Promise<string | null> => {
@@ -205,8 +174,7 @@ export default function Home() {
   }, [supabase]);
 
   const handleImageUpload = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const files = e.target.files;
-    if (!files) return;
+    const files = e.target.files; if (!files) return;
     setUploadingImage(true);
     const urls: string[] = [];
     for (let i = 0; i < files.length; i++) { const url = await uploadImage(files[i]); if (url) urls.push(url); }
@@ -219,11 +187,8 @@ export default function Home() {
     if (!currentQuestion || (!currentNote.trim() && currentNoteImages.length === 0)) return;
     setSavingNote(true);
     try {
-      if (currentQuestionNote) {
-        await supabase.from('notes').update({ content: currentNote, images: currentNoteImages, updated_at: new Date().toISOString() }).eq('id', currentQuestionNote.id);
-      } else {
-        await supabase.from('notes').insert({ user_id: 'default', question_id: currentQuestion.id, category: currentQuestion.category, title: `Note: ${currentQuestion.question_text.substring(0, 50)}...`, content: currentNote, images: currentNoteImages });
-      }
+      if (currentQuestionNote) { await supabase.from('notes').update({ content: currentNote, images: currentNoteImages, updated_at: new Date().toISOString() }).eq('id', currentQuestionNote.id); }
+      else { await supabase.from('notes').insert({ user_id: 'default', question_id: currentQuestion.id, category: currentQuestion.category, title: `Note: ${currentQuestion.question_text.substring(0, 50)}...`, content: currentNote, images: currentNoteImages }); }
       const { data } = await supabase.from('notes').select('*').order('updated_at', { ascending: false });
       if (data) setNotes(data);
     } catch (e) { console.error(e); }
@@ -238,41 +203,22 @@ export default function Home() {
     if (data) setNotes(data);
   }, [currentQuestionNote, supabase]);
 
-  const handleNoteChange = useCallback((e: React.ChangeEvent<HTMLTextAreaElement>) => setCurrentNote(e.target.value), []);
-  const handleSearchChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => setSearchQuery(e.target.value), []);
-  const removeNoteImage = useCallback((index: number) => setCurrentNoteImages(prev => prev.filter((_, i) => i !== index)), []);
-
   const categoryOptions = useMemo(() => Object.entries(CATEGORY_INFO).map(([key, info]) => ({ key, label: info.name, count: questionCounts.byCategory[key] || 0 })), [questionCounts.byCategory]);
   const subspecialtyOptions = useMemo(() => Object.entries(SUBSPECIALTY_INFO).map(([key, info]) => ({ key, label: info.name, count: questionCounts.bySubspecialty[key] || 0 })).filter(opt => (questionCounts.bySubspecialty[opt.key] || 0) > 0), [questionCounts.bySubspecialty]);
 
-  if (loading) {
-    return (
-      <div className="flex min-h-screen items-center justify-center">
-        <div className="flex flex-col items-center gap-4">
-          <div className="w-10 h-10 border-3 border-blue-500 border-t-transparent rounded-full animate-spin" />
-          <p className="text-gray-500 font-medium">Loading...</p>
-        </div>
-      </div>
-    );
-  }
+  if (loading) return (<div className="flex min-h-screen items-center justify-center"><div className="flex flex-col items-center gap-4"><div className="w-10 h-10 border-3 border-blue-500 border-t-transparent rounded-full animate-spin" /><p className="text-gray-500 font-medium">Loading...</p></div></div>);
 
   return (
     <div className="flex min-h-screen">
       {lightboxImage && <Lightbox src={lightboxImage} onClose={() => setLightboxImage(null)} />}
       {sidebarOpen && <div className="fixed inset-0 bg-black/20 backdrop-blur-sm z-40 lg:hidden animate-fadeIn" onClick={() => setSidebarOpen(false)} />}
       
-      {/* Sidebar */}
       <nav className={`sidebar fixed inset-y-0 left-0 z-50 w-72 transform transition-transform duration-300 ease-out ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'} lg:translate-x-0 lg:static`}>
         <div className="flex flex-col h-full">
           <div className="p-6">
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center text-white">
-                <Icons.Sparkles />
-              </div>
-              <div>
-                <h1 className="text-lg font-bold text-gray-800">Diagnostic</h1>
-                <p className="text-sm font-semibold text-blue-600">Excellence</p>
-              </div>
+              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center text-white"><Icons.Sparkles /></div>
+              <div><h1 className="text-lg font-bold text-gray-800">Diagnostic</h1><p className="text-sm font-semibold text-blue-600">Excellence</p></div>
             </div>
           </div>
           <div className="flex-1 overflow-y-auto px-4 space-y-1">
@@ -282,51 +228,31 @@ export default function Home() {
             <NavButton icon={<Icons.Chart />} label="Statistics" active={currentView === 'stats'} onClick={() => { setCurrentView('stats'); setSidebarOpen(false); }} />
           </div>
           <div className="p-4 mx-4 mb-4 rounded-xl bg-gray-50">
-            <div className="flex items-center justify-between text-sm">
-              <span className="text-gray-500">Total Questions</span>
-              <span className="font-bold text-gray-800">{questions.length}</span>
-            </div>
-            <div className="flex items-center justify-between text-sm mt-1">
-              <span className="text-gray-500">Notes Created</span>
-              <span className="font-bold text-gray-800">{notes.length}</span>
-            </div>
+            <div className="flex items-center justify-between text-sm"><span className="text-gray-500">Total Questions</span><span className="font-bold text-gray-800">{questions.length}</span></div>
+            <div className="flex items-center justify-between text-sm mt-1"><span className="text-gray-500">Notes Created</span><span className="font-bold text-gray-800">{notes.length}</span></div>
           </div>
         </div>
       </nav>
 
-      {/* Main content */}
       <main className="flex-1 min-w-0">
-        {/* Header */}
         <header className="app-header">
           <div className="flex items-center gap-4">
-            <button onClick={() => setSidebarOpen(true)} className="lg:hidden p-2 hover:bg-gray-100 rounded-xl transition-colors">
-              <Icons.Menu />
-            </button>
+            <button onClick={() => setSidebarOpen(true)} className="lg:hidden p-2 hover:bg-gray-100 rounded-xl transition-colors"><Icons.Menu /></button>
             <div className="flex-1" />
-            {currentView === 'practice' && currentQuestion && (
-              <span className="category-badge">
-                {CATEGORY_INFO[currentQuestion.category]?.name}
-              </span>
-            )}
+            {currentView === 'practice' && currentQuestion && <span className="category-badge">{CATEGORY_INFO[currentQuestion.category]?.name}</span>}
           </div>
         </header>
 
         <div className="main-content">
-          {/* Dashboard */}
           {currentView === 'dashboard' && (
             <div className="space-y-6 sm:space-y-8 animate-fadeIn">
-              <div>
-                <h2 className="text-2xl sm:text-3xl font-bold text-gray-800">Welcome back! 👋</h2>
-                <p className="text-gray-500 mt-1">Continue your exam preparation</p>
-              </div>
-              
+              <div><h2 className="text-2xl sm:text-3xl font-bold text-gray-800">Welcome back! 👋</h2><p className="text-gray-500 mt-1">Continue your exam preparation</p></div>
               <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
                 <StatCard label="Total Questions" value={stats.total} gradient="stat-gradient-blue" />
                 <StatCard label="Attempted" value={stats.attempted} gradient="stat-gradient-purple" />
                 <StatCard label="Correct" value={stats.correct} gradient="stat-gradient-green" />
                 <StatCard label="Accuracy" value={`${stats.accuracy}%`} gradient="stat-gradient-amber" />
               </div>
-              
               <div className="elevated-card p-4 sm:p-6">
                 <h3 className="text-lg font-bold text-gray-800 mb-4">Quick Start</h3>
                 <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-3">
@@ -336,224 +262,101 @@ export default function Home() {
                     const accuracy = catStats?.attempted ? Math.round((catStats.correct / catStats.attempted) * 100) : null;
                     return (
                       <button key={key} onClick={() => { setSelectedCategories([key]); setSelectedSubspecialties([]); setCurrentView('quiz-setup'); }} disabled={count === 0}
-                        className="p-4 rounded-xl text-left transition-all duration-200 bg-gray-50 hover:bg-gray-100 disabled:opacity-40 disabled:hover:bg-gray-50 group">
+                        className="p-4 rounded-xl text-left transition-all duration-200 bg-gray-50 hover:bg-gray-100 disabled:opacity-40 group">
                         <div className="font-semibold text-gray-800 group-hover:text-blue-600 transition-colors">{info.name}</div>
                         <div className="text-sm text-gray-500 mt-0.5">{count} questions</div>
-                        {accuracy !== null && (
-                          <div className="mt-2 flex items-center gap-2">
-                            <div className="flex-1 h-1.5 bg-gray-200 rounded-full overflow-hidden">
-                              <div className={`h-full rounded-full ${accuracy >= 70 ? 'bg-green-500' : accuracy >= 50 ? 'bg-amber-500' : 'bg-red-500'}`} style={{ width: `${accuracy}%` }} />
-                            </div>
-                            <span className="text-xs font-medium text-gray-500">{accuracy}%</span>
-                          </div>
-                        )}
+                        {accuracy !== null && (<div className="mt-2 flex items-center gap-2"><div className="flex-1 h-1.5 bg-gray-200 rounded-full overflow-hidden"><div className={`h-full rounded-full ${accuracy >= 70 ? 'bg-green-500' : accuracy >= 50 ? 'bg-amber-500' : 'bg-red-500'}`} style={{ width: `${accuracy}%` }} /></div><span className="text-xs font-medium text-gray-500">{accuracy}%</span></div>)}
                       </button>
                     );
                   })}
                 </div>
-                <button onClick={() => setCurrentView('quiz-setup')} className="btn-primary w-full mt-4 flex items-center justify-center gap-2">
-                  <Icons.Sparkles /> Custom Quiz
-                </button>
+                <button onClick={() => setCurrentView('quiz-setup')} className="btn-primary w-full mt-4 flex items-center justify-center gap-2"><Icons.Sparkles /> Custom Quiz</button>
               </div>
             </div>
           )}
 
-          {/* Quiz Setup */}
           {currentView === 'quiz-setup' && (
             <div className="max-w-2xl mx-auto space-y-6 animate-fadeIn">
-              <div>
-                <h2 className="text-2xl sm:text-3xl font-bold text-gray-800">Create Quiz</h2>
-                <p className="text-gray-500 mt-1">Select topics to practice</p>
-              </div>
-              
+              <div><h2 className="text-2xl sm:text-3xl font-bold text-gray-800">Create Quiz</h2><p className="text-gray-500 mt-1">Select topics to practice</p></div>
               <div className="elevated-card p-4 sm:p-6 space-y-6">
                 <ChipSelect label="Categories" options={categoryOptions.map(o => ({ ...o, label: `${o.label} (${o.count})` }))} selected={selectedCategories} onChange={setSelectedCategories} />
-                {subspecialtyOptions.length > 0 && (
-                  <ChipSelect label="Subspecialties" options={subspecialtyOptions.map(o => ({ ...o, label: `${o.label} (${o.count})` }))} selected={selectedSubspecialties} onChange={setSelectedSubspecialties} />
-                )}
-                
+                {subspecialtyOptions.length > 0 && <ChipSelect label="Subspecialties" options={subspecialtyOptions.map(o => ({ ...o, label: `${o.label} (${o.count})` }))} selected={selectedSubspecialties} onChange={setSelectedSubspecialties} />}
                 <div className="pt-6 border-t border-gray-100">
-                  <div className="flex items-center justify-between mb-4">
-                    <span className="text-gray-600">Available questions</span>
-                    <span className="text-3xl font-bold text-blue-600">{availableQuestions.length}</span>
-                  </div>
-                  <button onClick={startQuiz} disabled={availableQuestions.length === 0} className="btn-primary w-full flex items-center justify-center gap-2">
-                    <Icons.Play /> Start Quiz
-                  </button>
+                  <div className="flex items-center justify-between mb-4"><span className="text-gray-600">Available questions</span><span className="text-3xl font-bold text-blue-600">{availableQuestions.length}</span></div>
+                  <button onClick={startQuiz} disabled={availableQuestions.length === 0} className="btn-primary w-full flex items-center justify-center gap-2"><Icons.Play /> Start Quiz</button>
                 </div>
               </div>
             </div>
           )}
 
-          {/* Practice - IMPROVED MOBILE LAYOUT */}
           {currentView === 'practice' && (
             <>
               {quizQuestions.length === 0 ? (
-                <div className="text-center py-16 animate-fadeIn">
-                  <p className="text-gray-500 mb-4">No questions selected</p>
-                  <button onClick={() => setCurrentView('quiz-setup')} className="btn-primary">Setup Quiz</button>
-                </div>
+                <div className="text-center py-16 animate-fadeIn"><p className="text-gray-500 mb-4">No questions selected</p><button onClick={() => setCurrentView('quiz-setup')} className="btn-primary">Setup Quiz</button></div>
               ) : (
                 <div className="animate-fadeIn">
-                  <div className={`max-w-3xl mx-auto ${showNotePanel ? 'lg:mr-0 lg:max-w-2xl' : ''}`}>
-                    {/* Progress bar header */}
+                  <div className="max-w-3xl mx-auto">
                     <div className="mb-4 sm:mb-6">
                       <div className="flex items-center justify-between gap-2 mb-3">
-                        <button onClick={() => setCurrentView('question-list')} className="btn-secondary text-sm px-3 py-2">
-                          <Icons.List />
-                        </button>
-                        <span className="text-sm font-medium text-gray-500">
-                          Question {currentQuestionIndex + 1} of {quizQuestions.length}
-                        </span>
-                        <button onClick={() => setShowNotePanel(!showNotePanel)} 
-                          className={`btn-secondary text-sm px-3 py-2 ${showNotePanel || currentQuestionNote ? '!bg-blue-50 !text-blue-600' : ''}`}>
-                          <Icons.Notes />
-                        </button>
+                        <button onClick={() => setCurrentView('question-list')} className="btn-secondary text-sm px-3 py-2"><Icons.List /></button>
+                        <span className="text-sm font-medium text-gray-500">Question {currentQuestionIndex + 1} of {quizQuestions.length}</span>
+                        <button onClick={() => setShowNotePanel(!showNotePanel)} className={`btn-secondary text-sm px-3 py-2 ${showNotePanel || currentQuestionNote ? '!bg-blue-50 !text-blue-600' : ''}`}><Icons.Notes /></button>
                       </div>
                       <div className="progress-container">
-                        {quizQuestions.map((fq, i) => {
-                          const p = progress.find(pr => pr.question_id === fq.id);
-                          let bg = 'bg-gray-200';
-                          if (p) bg = p.answered_correctly ? 'bg-green-500' : 'bg-red-400';
-                          if (i === currentQuestionIndex) bg = 'bg-blue-500';
-                          return <button key={fq.id} onClick={() => goToQuestion(i)} className={`progress-segment flex-1 ${bg}`} />;
-                        })}
+                        {quizQuestions.map((fq, i) => { const p = progress.find(pr => pr.question_id === fq.id); let bg = 'bg-gray-200'; if (p) bg = p.answered_correctly ? 'bg-green-500' : 'bg-red-400'; if (i === currentQuestionIndex) bg = 'bg-blue-500'; return <button key={fq.id} onClick={() => goToQuestion(i)} className={`progress-segment flex-1 ${bg}`} />; })}
                       </div>
                     </div>
                     
-                    {/* Question Card */}
                     <div className="quiz-card p-4 sm:p-6 lg:p-8 mb-4 sm:mb-6">
-                      {currentQuestion?.subspecialties && currentQuestion.subspecialties.length > 0 && (
-                        <div className="flex flex-wrap gap-2 mb-3 sm:mb-4">
-                          {currentQuestion.subspecialties.map(sub => (
-                            <span key={sub} className="subspecialty-badge">{SUBSPECIALTY_INFO[sub]?.name}</span>
-                          ))}
-                        </div>
-                      )}
-                      {currentQuestion?.image_url && (
-                        <img src={currentQuestion.image_url} alt="" 
-                          className="w-full max-h-64 sm:max-h-72 object-contain rounded-xl mb-4 sm:mb-6 bg-gray-50 cursor-pointer" 
-                          onClick={() => setLightboxImage(currentQuestion.image_url!)} />
-                      )}
+                      {currentQuestion?.subspecialties && currentQuestion.subspecialties.length > 0 && <div className="flex flex-wrap gap-2 mb-3 sm:mb-4">{currentQuestion.subspecialties.map(sub => <span key={sub} className="subspecialty-badge">{SUBSPECIALTY_INFO[sub]?.name}</span>)}</div>}
+                      {currentQuestion?.image_url && <img src={currentQuestion.image_url} alt="" className="w-full max-h-64 sm:max-h-72 object-contain rounded-xl mb-4 sm:mb-6 bg-gray-50 cursor-pointer" onClick={() => setLightboxImage(currentQuestion.image_url!)} />}
                       <p className="question-text">{currentQuestion?.question_text}</p>
                     </div>
                     
-                    {/* Options - IMPROVED */}
                     {currentQuestion?.options && (
                       <div className="space-y-2 sm:space-y-3 mb-4 sm:mb-6">
                         {Object.entries(currentQuestion.options).map(([k, v]) => (
                           <button key={k} onClick={() => handleAnswer(k)} disabled={showExplanation}
                             className={`option-button ${selectedAnswer === k ? 'selected' : ''} ${showExplanation && k === currentQuestion.correct_answer ? 'correct' : ''} ${showExplanation && selectedAnswer === k && k !== currentQuestion.correct_answer ? 'incorrect' : ''}`}>
-                            <span className={`option-letter ${showExplanation && k === currentQuestion.correct_answer ? '!bg-green-500 !text-white' : ''} ${showExplanation && selectedAnswer === k && k !== currentQuestion.correct_answer ? '!bg-red-500 !text-white' : ''}`}>
-                              {k.toUpperCase()}
-                            </span>
+                            <span className={`option-letter ${showExplanation && k === currentQuestion.correct_answer ? '!bg-green-500 !text-white' : ''} ${showExplanation && selectedAnswer === k && k !== currentQuestion.correct_answer ? '!bg-red-500 !text-white' : ''}`}>{k.toUpperCase()}</span>
                             <span className="option-text">{v}</span>
                           </button>
                         ))}
                       </div>
                     )}
                     
-                    {/* Explanation */}
                     {showExplanation && (
                       <div className="mb-4 sm:mb-6 animate-slideUp">
                         <div className={`explanation-box ${selectedAnswer === currentQuestion?.correct_answer ? 'correct' : 'incorrect'}`}>
                           <div className="flex items-center gap-2 mb-2">
-                            {selectedAnswer === currentQuestion?.correct_answer ? (
-                              <>
-                                <span className="w-6 h-6 rounded-full bg-green-500 flex items-center justify-center text-white flex-shrink-0"><Icons.Check /></span>
-                                <span className="font-semibold text-green-700">Correct!</span>
-                              </>
-                            ) : (
-                              <>
-                                <span className="w-6 h-6 rounded-full bg-red-500 flex items-center justify-center text-white text-sm flex-shrink-0">✗</span>
-                                <span className="font-semibold text-red-700">Incorrect — Answer: {currentQuestion?.correct_answer?.toUpperCase()}</span>
-                              </>
-                            )}
+                            {selectedAnswer === currentQuestion?.correct_answer ? (<><span className="w-6 h-6 rounded-full bg-green-500 flex items-center justify-center text-white flex-shrink-0"><Icons.Check /></span><span className="font-semibold text-green-700">Correct!</span></>) : (<><span className="w-6 h-6 rounded-full bg-red-500 flex items-center justify-center text-white text-sm flex-shrink-0">✗</span><span className="font-semibold text-red-700">Incorrect — Answer: {currentQuestion?.correct_answer?.toUpperCase()}</span></>)}
                           </div>
                           {currentQuestion?.explanation && <p className="text-gray-600 leading-relaxed text-sm sm:text-base">{currentQuestion.explanation}</p>}
                         </div>
                       </div>
                     )}
                     
-                    {/* Navigation */}
                     <div className="nav-button-group">
-                      <button onClick={() => goToQuestion(currentQuestionIndex - 1)} disabled={currentQuestionIndex === 0} 
-                        className="btn-secondary flex items-center gap-1 sm:gap-2">
-                        <Icons.ChevronLeft /> <span className="hidden sm:inline">Previous</span>
-                      </button>
+                      <button onClick={() => goToQuestion(currentQuestionIndex - 1)} disabled={currentQuestionIndex === 0} className="btn-secondary flex items-center gap-1 sm:gap-2"><Icons.ChevronLeft /> <span className="hidden sm:inline">Previous</span></button>
                       <span className="text-sm text-gray-400 font-medium">{currentQuestionIndex + 1} / {quizQuestions.length}</span>
-                      <button onClick={() => goToQuestion(currentQuestionIndex + 1)} disabled={currentQuestionIndex >= quizQuestions.length - 1} 
-                        className="btn-primary flex items-center gap-1 sm:gap-2">
-                        <span className="hidden sm:inline">Next</span> <Icons.ChevronRight />
-                      </button>
+                      <button onClick={() => goToQuestion(currentQuestionIndex + 1)} disabled={currentQuestionIndex >= quizQuestions.length - 1} className="btn-primary flex items-center gap-1 sm:gap-2"><span className="hidden sm:inline">Next</span> <Icons.ChevronRight /></button>
                     </div>
                   </div>
-                  
-                  {/* Note Panel Desktop */}
-                  {showNotePanel && (
-                    <div className="w-80 flex-shrink-0 hidden lg:block fixed right-8 top-24">
-                      <div className="note-panel p-5">
-                        <div className="flex items-center justify-between mb-4">
-                          <h3 className="font-semibold text-gray-800">Notes</h3>
-                          <button onClick={() => setShowNotePanel(false)} className="p-1.5 hover:bg-gray-100 rounded-lg transition-colors text-gray-400"><Icons.X /></button>
-                        </div>
-                        <textarea value={currentNote} onChange={handleNoteChange} placeholder="Add your notes here..." className="input-field h-40 resize-none text-sm" />
-                        <div className="mt-3">
-                          <input ref={fileInputRef} type="file" accept="image/*" multiple onChange={handleImageUpload} className="hidden" />
-                          <button onClick={() => fileInputRef.current?.click()} disabled={uploadingImage} className="btn-secondary flex items-center gap-2 text-sm w-full justify-center">
-                            {uploadingImage ? 'Uploading...' : <><Icons.Image /> Add Images</>}
-                          </button>
-                          {currentNoteImages.length > 0 && (
-                            <div className="flex flex-wrap gap-2 mt-3">
-                              {currentNoteImages.map((img, i) => (
-                                <div key={i} className="relative group">
-                                  <img src={img} alt="" className="w-16 h-16 object-cover rounded-lg cursor-pointer" onClick={() => setLightboxImage(img)} />
-                                  <button onClick={() => removeNoteImage(i)} className="absolute -top-1.5 -right-1.5 w-5 h-5 bg-red-500 text-white rounded-full text-xs opacity-0 group-hover:opacity-100 transition-opacity">×</button>
-                                </div>
-                              ))}
-                            </div>
-                          )}
-                        </div>
-                        <div className="flex gap-2 mt-4">
-                          <button onClick={saveNote} disabled={savingNote || (!currentNote.trim() && currentNoteImages.length === 0)} className="btn-primary flex-1 flex items-center justify-center gap-2 text-sm py-2.5">
-                            <Icons.Save /> {savingNote ? 'Saving...' : 'Save'}
-                          </button>
-                          {currentQuestionNote && <button onClick={deleteCurrentNote} className="p-2.5 bg-red-50 hover:bg-red-100 text-red-500 rounded-xl transition-colors"><Icons.Trash /></button>}
-                        </div>
-                      </div>
-                    </div>
-                  )}
                 </div>
               )}
               
-              {/* Note Panel Mobile */}
               {showNotePanel && quizQuestions.length > 0 && (
-                <div className="lg:hidden fixed inset-x-0 bottom-0 z-50 bottom-sheet p-4 sm:p-5 max-h-[70vh] overflow-y-auto animate-slideInFromBottom safe-area-bottom">
-                  <div className="w-12 h-1 bg-gray-300 rounded-full mx-auto mb-4" />
-                  <div className="flex items-center justify-between mb-4">
-                    <h3 className="font-semibold text-gray-800">Notes</h3>
-                    <button onClick={() => setShowNotePanel(false)} className="p-1.5 hover:bg-gray-100 rounded-lg text-gray-400"><Icons.X /></button>
-                  </div>
-                  <textarea value={currentNote} onChange={handleNoteChange} placeholder="Add your notes..." className="input-field h-24 resize-none text-sm" />
+                <div className="fixed inset-x-0 bottom-0 z-50 bottom-sheet p-4 sm:p-5 max-h-[70vh] overflow-y-auto animate-slideInFromBottom safe-area-bottom lg:fixed lg:right-8 lg:left-auto lg:bottom-auto lg:top-24 lg:w-80 lg:inset-x-auto lg:rounded-xl lg:max-h-none">
+                  <div className="w-12 h-1 bg-gray-300 rounded-full mx-auto mb-4 lg:hidden" />
+                  <div className="flex items-center justify-between mb-4"><h3 className="font-semibold text-gray-800">Notes</h3><button onClick={() => setShowNotePanel(false)} className="p-1.5 hover:bg-gray-100 rounded-lg text-gray-400"><Icons.X /></button></div>
+                  <textarea value={currentNote} onChange={e => setCurrentNote(e.target.value)} placeholder="Add your notes..." className="input-field h-24 lg:h-40 resize-none text-sm" />
                   <div className="mt-3">
-                    <button onClick={() => fileInputRef.current?.click()} disabled={uploadingImage} className="btn-secondary flex items-center gap-2 text-sm">
-                      {uploadingImage ? 'Uploading...' : <><Icons.Image /> Add Images</>}
-                    </button>
-                    {currentNoteImages.length > 0 && (
-                      <div className="flex flex-wrap gap-2 mt-3">
-                        {currentNoteImages.map((img, i) => (
-                          <div key={i} className="relative">
-                            <img src={img} alt="" className="w-16 h-16 object-cover rounded-lg cursor-pointer" onClick={() => setLightboxImage(img)} />
-                            <button onClick={() => removeNoteImage(i)} className="absolute -top-1.5 -right-1.5 w-5 h-5 bg-red-500 text-white rounded-full text-xs">×</button>
-                          </div>
-                        ))}
-                      </div>
-                    )}
+                    <input ref={fileInputRef} type="file" accept="image/*" multiple onChange={handleImageUpload} className="hidden" />
+                    <button onClick={() => fileInputRef.current?.click()} disabled={uploadingImage} className="btn-secondary flex items-center gap-2 text-sm">{uploadingImage ? 'Uploading...' : <><Icons.Image /> Add Images</>}</button>
+                    {currentNoteImages.length > 0 && <div className="flex flex-wrap gap-2 mt-3">{currentNoteImages.map((img, i) => <div key={i} className="relative"><img src={img} alt="" className="w-16 h-16 object-cover rounded-lg cursor-pointer" onClick={() => setLightboxImage(img)} /><button onClick={() => setCurrentNoteImages(prev => prev.filter((_, idx) => idx !== i))} className="absolute -top-1.5 -right-1.5 w-5 h-5 bg-red-500 text-white rounded-full text-xs">×</button></div>)}</div>}
                   </div>
                   <div className="flex gap-2 mt-4">
-                    <button onClick={saveNote} disabled={savingNote || (!currentNote.trim() && currentNoteImages.length === 0)} className="btn-primary flex-1 flex items-center justify-center gap-2 text-sm py-2.5">
-                      <Icons.Save /> {savingNote ? 'Saving...' : 'Save'}
-                    </button>
+                    <button onClick={saveNote} disabled={savingNote || (!currentNote.trim() && currentNoteImages.length === 0)} className="btn-primary flex-1 flex items-center justify-center gap-2 text-sm py-2.5"><Icons.Save /> {savingNote ? 'Saving...' : 'Save'}</button>
                     {currentQuestionNote && <button onClick={deleteCurrentNote} className="p-2.5 bg-red-50 text-red-500 rounded-xl"><Icons.Trash /></button>}
                   </div>
                 </div>
@@ -561,52 +364,31 @@ export default function Home() {
             </>
           )}
 
-          {/* Question List */}
           {currentView === 'question-list' && (
             <div className="animate-fadeIn">
-              <div className="flex items-center justify-between mb-6">
-                <h2 className="text-xl sm:text-2xl font-bold text-gray-800">All Questions</h2>
-                <button onClick={() => setCurrentView('practice')} className="btn-secondary">Back to Quiz</button>
-              </div>
+              <div className="flex items-center justify-between mb-6"><h2 className="text-xl sm:text-2xl font-bold text-gray-800">All Questions</h2><button onClick={() => setCurrentView('practice')} className="btn-secondary">Back to Quiz</button></div>
               <div className="grid gap-3">
-                {quizQuestions.map((q, i) => {
-                  const p = progress.find(pr => pr.question_id === q.id);
-                  const n = notes.find(nt => nt.question_id === q.id);
-                  return (
-                    <button key={q.id} onClick={() => { goToQuestion(i); setCurrentView('practice'); }}
-                      className={`elevated-card w-full text-left p-4 ${i === currentQuestionIndex ? 'ring-2 ring-blue-500' : ''}`}>
-                      <div className="flex items-start gap-3">
-                        <span className={`w-8 h-8 rounded-xl flex items-center justify-center text-sm font-semibold flex-shrink-0 ${p ? p.answered_correctly ? 'bg-green-100 text-green-600' : 'bg-red-100 text-red-600' : 'bg-gray-100 text-gray-500'}`}>{i + 1}</span>
-                        <div className="flex-1 min-w-0">
-                          <p className="text-gray-700 line-clamp-2 text-sm sm:text-base">{q.question_text}</p>
-                          {n && <span className="mt-2 inline-block px-2 py-0.5 bg-blue-50 text-blue-600 rounded text-xs font-medium">Has note</span>}
-                        </div>
-                      </div>
-                    </button>
-                  );
-                })}
+                {quizQuestions.map((q, i) => { const p = progress.find(pr => pr.question_id === q.id); const n = notes.find(nt => nt.question_id === q.id); return (
+                  <button key={q.id} onClick={() => { goToQuestion(i); setCurrentView('practice'); }} className={`elevated-card w-full text-left p-4 ${i === currentQuestionIndex ? 'ring-2 ring-blue-500' : ''}`}>
+                    <div className="flex items-start gap-3">
+                      <span className={`w-8 h-8 rounded-xl flex items-center justify-center text-sm font-semibold flex-shrink-0 ${p ? p.answered_correctly ? 'bg-green-100 text-green-600' : 'bg-red-100 text-red-600' : 'bg-gray-100 text-gray-500'}`}>{i + 1}</span>
+                      <div className="flex-1 min-w-0"><p className="text-gray-700 line-clamp-2 text-sm sm:text-base">{q.question_text}</p>{n && <span className="mt-2 inline-block px-2 py-0.5 bg-blue-50 text-blue-600 rounded text-xs font-medium">Has note</span>}</div>
+                    </div>
+                  </button>
+                ); })}
               </div>
             </div>
           )}
 
-          {/* Notes */}
           {currentView === 'notes' && (
             <div className="space-y-6 animate-fadeIn">
               <h2 className="text-2xl sm:text-3xl font-bold text-gray-800">My Notes</h2>
-              <div className="relative">
-                <input type="text" placeholder="Search notes..." value={searchQuery} onChange={handleSearchChange} className="input-field pl-11" />
-                <div className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400"><Icons.Search /></div>
-              </div>
-              {filteredNotes.length === 0 ? (
-                <div className="text-center py-16"><p className="text-gray-400">No notes yet</p></div>
-              ) : (
+              <div className="relative"><input type="text" placeholder="Search notes..." value={searchQuery} onChange={e => setSearchQuery(e.target.value)} className="input-field pl-11" /><div className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400"><Icons.Search /></div></div>
+              {filteredNotes.length === 0 ? <div className="text-center py-16"><p className="text-gray-400">No notes yet</p></div> : (
                 <div className="grid gap-4">
                   {filteredNotes.map(n => (
                     <div key={n.id} className="elevated-card p-4 sm:p-5">
-                      <div className="flex justify-between items-start mb-3">
-                        <h3 className="font-semibold text-gray-800 text-sm sm:text-base">{n.title}</h3>
-                        <button onClick={async () => { if (confirm('Delete this note?')) { await supabase.from('notes').delete().eq('id', n.id); loadData(); }}} className="text-gray-300 hover:text-red-500 transition-colors"><Icons.Trash /></button>
-                      </div>
+                      <div className="flex justify-between items-start mb-3"><h3 className="font-semibold text-gray-800 text-sm sm:text-base">{n.title}</h3><button onClick={async () => { if (confirm('Delete?')) { await supabase.from('notes').delete().eq('id', n.id); loadData(); }}} className="text-gray-300 hover:text-red-500 transition-colors"><Icons.Trash /></button></div>
                       <p className="text-gray-600 text-sm">{n.content}</p>
                       {n.images && n.images.length > 0 && <div className="flex flex-wrap gap-2 mt-3">{n.images.map((img, i) => <img key={i} src={img} alt="" className="w-16 h-16 object-cover rounded-lg cursor-pointer" onClick={() => setLightboxImage(img)} />)}</div>}
                     </div>
@@ -616,7 +398,6 @@ export default function Home() {
             </div>
           )}
 
-          {/* Stats */}
           {currentView === 'stats' && (
             <div className="space-y-6 sm:space-y-8 animate-fadeIn">
               <h2 className="text-2xl sm:text-3xl font-bold text-gray-800">Statistics</h2>
@@ -626,51 +407,28 @@ export default function Home() {
                 <StatCard label="Correct" value={stats.correct} gradient="stat-gradient-green" />
                 <StatCard label="Accuracy" value={`${stats.accuracy}%`} gradient="stat-gradient-amber" />
               </div>
-              
               <div className="elevated-card p-4 sm:p-6">
                 <h3 className="text-lg font-bold text-gray-800 mb-4">Performance by Category</h3>
                 <div className="space-y-4">
-                  {Object.entries(CATEGORY_INFO).map(([cat, info]) => {
-                    const cs = stats.byCategory[cat] || { attempted: 0, correct: 0 };
-                    const acc = cs.attempted > 0 ? Math.round((cs.correct / cs.attempted) * 100) : 0;
-                    const qc = questionCounts.byCategory[cat] || 0;
-                    if (qc === 0) return null;
-                    return (
-                      <div key={cat}>
-                        <div className="flex justify-between items-center mb-2">
-                          <span className="font-medium text-gray-700 text-sm sm:text-base">{info.name}</span>
-                          <span className={`font-bold ${acc >= 70 ? 'text-green-600' : acc >= 50 ? 'text-amber-600' : cs.attempted ? 'text-red-600' : 'text-gray-400'}`}>
-                            {cs.attempted ? `${acc}%` : '—'}
-                          </span>
-                        </div>
-                        <div className="h-2 bg-gray-100 rounded-full overflow-hidden">
-                          <div className={`h-full rounded-full transition-all ${acc >= 70 ? 'bg-green-500' : acc >= 50 ? 'bg-amber-500' : 'bg-red-500'}`} style={{ width: `${acc}%` }} />
-                        </div>
-                        <p className="text-xs text-gray-400 mt-1">{cs.correct} of {cs.attempted} correct · {qc} questions total</p>
-                      </div>
-                    );
-                  })}
+                  {Object.entries(CATEGORY_INFO).map(([cat, info]) => { const cs = stats.byCategory[cat] || { attempted: 0, correct: 0 }; const acc = cs.attempted > 0 ? Math.round((cs.correct / cs.attempted) * 100) : 0; const qc = questionCounts.byCategory[cat] || 0; if (qc === 0) return null; return (
+                    <div key={cat}>
+                      <div className="flex justify-between items-center mb-2"><span className="font-medium text-gray-700 text-sm sm:text-base">{info.name}</span><span className={`font-bold ${acc >= 70 ? 'text-green-600' : acc >= 50 ? 'text-amber-600' : cs.attempted ? 'text-red-600' : 'text-gray-400'}`}>{cs.attempted ? `${acc}%` : '—'}</span></div>
+                      <div className="h-2 bg-gray-100 rounded-full overflow-hidden"><div className={`h-full rounded-full transition-all ${acc >= 70 ? 'bg-green-500' : acc >= 50 ? 'bg-amber-500' : 'bg-red-500'}`} style={{ width: `${acc}%` }} /></div>
+                      <p className="text-xs text-gray-400 mt-1">{cs.correct} of {cs.attempted} correct · {qc} questions total</p>
+                    </div>
+                  ); })}
                 </div>
               </div>
-
               {Object.keys(stats.bySubspecialty).length > 0 && (
                 <div className="elevated-card p-4 sm:p-6">
                   <h3 className="text-lg font-bold text-gray-800 mb-4">Performance by Subspecialty</h3>
                   <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-3">
-                    {Object.entries(SUBSPECIALTY_INFO).map(([sub, info]) => {
-                      const ss = stats.bySubspecialty[sub];
-                      if (!ss) return null;
-                      const acc = ss.attempted > 0 ? Math.round((ss.correct / ss.attempted) * 100) : 0;
-                      return (
-                        <div key={sub} className="p-4 bg-gray-50 rounded-xl">
-                          <div className="flex justify-between items-center">
-                            <span className="font-medium text-gray-700 text-sm">{info.name}</span>
-                            <span className={`font-bold ${acc >= 70 ? 'text-green-600' : acc >= 50 ? 'text-amber-600' : 'text-red-600'}`}>{acc}%</span>
-                          </div>
-                          <p className="text-xs text-gray-400 mt-1">{ss.correct}/{ss.attempted} correct</p>
-                        </div>
-                      );
-                    })}
+                    {Object.entries(SUBSPECIALTY_INFO).map(([sub, info]) => { const ss = stats.bySubspecialty[sub]; if (!ss) return null; const acc = ss.attempted > 0 ? Math.round((ss.correct / ss.attempted) * 100) : 0; return (
+                      <div key={sub} className="p-4 bg-gray-50 rounded-xl">
+                        <div className="flex justify-between items-center"><span className="font-medium text-gray-700 text-sm">{info.name}</span><span className={`font-bold ${acc >= 70 ? 'text-green-600' : acc >= 50 ? 'text-amber-600' : 'text-red-600'}`}>{acc}%</span></div>
+                        <p className="text-xs text-gray-400 mt-1">{ss.correct}/{ss.attempted} correct</p>
+                      </div>
+                    ); })}
                   </div>
                 </div>
               )}
