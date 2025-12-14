@@ -1444,7 +1444,7 @@ export default function Home() {
                                             className={`text-xs px-3 py-1.5 rounded ${
                                               key === relatedQuestion.correct_answer 
                                                 ? 'bg-green-100 text-green-700 font-medium' 
-                                                : 'text-gray-600
+                                                : 'text-gray-600'
                                             }`}
                                           >
                                             <span className="font-medium">{key.toUpperCase()}.</span> {value}
@@ -1515,7 +1515,7 @@ export default function Home() {
                             className={`w-full p-3 rounded-lg text-left flex items-center justify-between transition-all ${
                               isSelected 
                                 ? 'bg-blue-50 border-2 border-blue-500' 
-                                : 'bg-gray-50 border-2 border-transparent hover:border-gray-200
+                                : 'bg-gray-50 border-2 border-transparent hover:border-gray-200'
                             }`}
                           >
                             <span className="font-medium text-gray-700">{catName}</span>
