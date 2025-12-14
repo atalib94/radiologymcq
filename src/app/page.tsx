@@ -4,79 +4,71 @@ import { createClient } from '@/lib/supabase';
 import { Question, Note, UserProgress, QuestionCategory, Subspecialty, CATEGORY_INFO, SUBSPECIALTY_INFO } from '@/types';
 
 const Icons = {
-  Menu: () => <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" /></svg>,
-  X: () => <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>,
-  Home: () => <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" /></svg>,
-  Book: () => <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" /></svg>,
-  Notes: () => <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" /></svg>,
-  Chart: () => <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" /></svg>,
-  Search: () => <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>,
-  Play: () => <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>,
-  Trash: () => <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>,
-  ChevronLeft: () => <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" /></svg>,
-  ChevronRight: () => <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" /></svg>,
-  Save: () => <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4" /></svg>,
-  List: () => <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 10h16M4 14h16M4 18h16" /></svg>,
-  Image: () => <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>,
-  Check: () => <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg>,
+  Menu: () => <svg className="w-6 h-6" fill="none" stroke="currentColor" strokeWidth={1.5} viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25h16.5" /></svg>,
+  X: () => <svg className="w-6 h-6" fill="none" stroke="currentColor" strokeWidth={1.5} viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" /></svg>,
+  Home: () => <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth={1.5} viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M2.25 12l8.954-8.955c.44-.439 1.152-.439 1.591 0L21.75 12M4.5 9.75v10.125c0 .621.504 1.125 1.125 1.125H9.75v-4.875c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125V21h4.125c.621 0 1.125-.504 1.125-1.125V9.75M8.25 21h8.25" /></svg>,
+  Play: () => <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth={1.5} viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M5.25 5.653c0-.856.917-1.398 1.667-.986l11.54 6.348a1.125 1.125 0 010 1.971l-11.54 6.347a1.125 1.125 0 01-1.667-.985V5.653z" /></svg>,
+  Notes: () => <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth={1.5} viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0115.75 21H5.25A2.25 2.25 0 013 18.75V8.25A2.25 2.25 0 015.25 6H10" /></svg>,
+  Chart: () => <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth={1.5} viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M3 13.125C3 12.504 3.504 12 4.125 12h2.25c.621 0 1.125.504 1.125 1.125v6.75C7.5 20.496 6.996 21 6.375 21h-2.25A1.125 1.125 0 013 19.875v-6.75zM9.75 8.625c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125v11.25c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125V8.625zM16.5 4.125c0-.621.504-1.125 1.125-1.125h2.25C20.496 3 21 3.504 21 4.125v15.75c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125V4.125z" /></svg>,
+  Search: () => <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth={1.5} viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z" /></svg>,
+  Trash: () => <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth={1.5} viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 00-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 00-7.5 0" /></svg>,
+  ChevronLeft: () => <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M15.75 19.5L8.25 12l7.5-7.5" /></svg>,
+  ChevronRight: () => <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5" /></svg>,
+  Save: () => <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth={1.5} viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M9 3.75H6.912a2.25 2.25 0 00-2.15 1.588L2.35 13.177a2.25 2.25 0 00-.1.661V18a2.25 2.25 0 002.25 2.25h15A2.25 2.25 0 0021.75 18v-4.162c0-.224-.034-.447-.1-.661L19.24 5.338a2.25 2.25 0 00-2.15-1.588H15M2.25 13.5h6.364a2.25 2.25 0 012.25 2.25v.894c0 .777.63 1.406 1.407 1.406h.638c.777 0 1.407-.63 1.407-1.406v-.894a2.25 2.25 0 012.25-2.25h6.364M12 3v8.25m0 0l-3-3m3 3l3-3" /></svg>,
+  List: () => <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth={1.5} viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M8.25 6.75h12M8.25 12h12m-12 5.25h12M3.75 6.75h.007v.008H3.75V6.75zm.375 0a.375.375 0 11-.75 0 .375.375 0 01.75 0zM3.75 12h.007v.008H3.75V12zm.375 0a.375.375 0 11-.75 0 .375.375 0 01.75 0zm-.375 5.25h.007v.008H3.75v-.008zm.375 0a.375.375 0 11-.75 0 .375.375 0 01.75 0z" /></svg>,
+  Image: () => <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth={1.5} viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M2.25 15.75l5.159-5.159a2.25 2.25 0 013.182 0l5.159 5.159m-1.5-1.5l1.409-1.409a2.25 2.25 0 013.182 0l2.909 2.909m-18 3.75h16.5a1.5 1.5 0 001.5-1.5V6a1.5 1.5 0 00-1.5-1.5H3.75A1.5 1.5 0 002.25 6v12a1.5 1.5 0 001.5 1.5zm10.5-11.25h.008v.008h-.008V8.25zm.375 0a.375.375 0 11-.75 0 .375.375 0 01.75 0z" /></svg>,
+  Check: () => <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12.75l6 6 9-13.5" /></svg>,
+  Sparkles: () => <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth={1.5} viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09zM18.259 8.715L18 9.75l-.259-1.035a3.375 3.375 0 00-2.455-2.456L14.25 6l1.036-.259a3.375 3.375 0 002.455-2.456L18 2.25l.259 1.035a3.375 3.375 0 002.456 2.456L21.75 6l-1.035.259a3.375 3.375 0 00-2.456 2.456zM16.894 20.567L16.5 21.75l-.394-1.183a2.25 2.25 0 00-1.423-1.423L13.5 18.75l1.183-.394a2.25 2.25 0 001.423-1.423l.394-1.183.394 1.183a2.25 2.25 0 001.423 1.423l1.183.394-1.183.394a2.25 2.25 0 00-1.423 1.423z" /></svg>,
 };
 
 const NavButton = memo(({ icon, label, active, onClick }: { icon: React.ReactNode; label: string; active?: boolean; onClick: () => void }) => (
-  <button onClick={onClick} className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-left ${active ? 'bg-gold-400/10 text-gold-400 border border-gold-400/30' : 'text-navy-300 hover:bg-navy-800 hover:text-white'}`}>{icon}<span className="font-medium">{label}</span></button>
+  <button onClick={onClick} className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-left transition-all duration-200 ${active ? 'bg-blue-50 text-blue-600 font-medium' : 'text-gray-600 hover:bg-gray-100'}`}>
+    {icon}<span>{label}</span>
+  </button>
 ));
 NavButton.displayName = 'NavButton';
 
-const StatCard = memo(({ label, value, highlight }: { label: string; value: string | number; highlight?: boolean }) => (
-  <div className={`p-4 rounded-xl border ${highlight ? 'bg-gold-400/10 border-gold-400/30' : 'bg-navy-800/50 border-navy-700'}`}>
-    <p className="text-sm text-navy-400">{label}</p><p className={`text-2xl font-bold mt-1 ${highlight ? 'text-gold-400' : 'text-white'}`}>{value}</p>
+const StatCard = memo(({ label, value, gradient, icon }: { label: string; value: string | number; gradient: string; icon?: React.ReactNode }) => (
+  <div className={`p-5 rounded-2xl ${gradient}`}>
+    <div className="flex items-center justify-between">
+      <div>
+        <p className="text-sm font-medium text-gray-500">{label}</p>
+        <p className="text-3xl font-bold text-gray-800 mt-1">{value}</p>
+      </div>
+      {icon && <div className="text-gray-400">{icon}</div>}
+    </div>
   </div>
 ));
 StatCard.displayName = 'StatCard';
 
 const Lightbox = memo(({ src, onClose }: { src: string; onClose: () => void }) => (
-  <div className="fixed inset-0 z-[100] bg-black/90 flex items-center justify-center p-4" onClick={onClose}>
-    <button onClick={onClose} className="absolute top-4 right-4 p-2 text-white hover:bg-white/10 rounded-full"><Icons.X /></button>
-    <img src={src} alt="" className="max-w-full max-h-full object-contain" onClick={e => e.stopPropagation()} />
+  <div className="fixed inset-0 z-[100] bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 animate-fadeIn" onClick={onClose}>
+    <button onClick={onClose} className="absolute top-4 right-4 p-2 text-white/80 hover:text-white hover:bg-white/10 rounded-full transition-colors"><Icons.X /></button>
+    <img src={src} alt="" className="max-w-full max-h-full object-contain rounded-lg shadow-2xl" onClick={e => e.stopPropagation()} />
   </div>
 ));
 Lightbox.displayName = 'Lightbox';
 
 const ChipSelect = memo(({ options, selected, onChange, label }: { 
-  options: { key: string; label: string }[]; 
+  options: { key: string; label: string; count?: number }[]; 
   selected: string[]; 
   onChange: (selected: string[]) => void;
   label: string;
 }) => {
-  const toggle = (key: string) => {
-    if (selected.includes(key)) {
-      onChange(selected.filter(k => k !== key));
-    } else {
-      onChange([...selected, key]);
-    }
-  };
-  const selectAll = () => onChange(options.map(o => o.key));
-  const selectNone = () => onChange([]);
-
+  const toggle = (key: string) => onChange(selected.includes(key) ? selected.filter(k => k !== key) : [...selected, key]);
   return (
-    <div className="space-y-2">
+    <div className="space-y-3">
       <div className="flex items-center justify-between">
-        <span className="text-sm font-medium text-navy-300">{label}</span>
-        <div className="flex gap-2 text-xs">
-          <button onClick={selectAll} className="text-gold-400 hover:text-gold-300">All</button>
-          <button onClick={selectNone} className="text-navy-400 hover:text-navy-300">None</button>
+        <span className="text-sm font-semibold text-gray-700">{label}</span>
+        <div className="flex gap-3 text-xs font-medium">
+          <button onClick={() => onChange(options.map(o => o.key))} className="text-blue-600 hover:text-blue-700">Select all</button>
+          <button onClick={() => onChange([])} className="text-gray-400 hover:text-gray-600">Clear</button>
         </div>
       </div>
       <div className="flex flex-wrap gap-2">
         {options.map(opt => (
-          <button
-            key={opt.key}
-            onClick={() => toggle(opt.key)}
-            className={`px-3 py-1.5 rounded-lg text-sm transition-all ${
-              selected.includes(opt.key)
-                ? 'bg-gold-400 text-navy-900 font-medium'
-                : 'bg-navy-800 text-navy-300 hover:bg-navy-700'
-            }`}
-          >
+          <button key={opt.key} onClick={() => toggle(opt.key)}
+            className={`chip ${selected.includes(opt.key) ? 'active' : ''}`}>
             {opt.label}
           </button>
         ))}
@@ -95,12 +87,8 @@ export default function Home() {
   const [notes, setNotes] = useState<Note[]>([]);
   const [progress, setProgress] = useState<UserProgress[]>([]);
   const [loading, setLoading] = useState(true);
-  
-  // Quiz setup
   const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
   const [selectedSubspecialties, setSelectedSubspecialties] = useState<string[]>([]);
-  
-  // Practice state
   const [quizQuestions, setQuizQuestions] = useState<Question[]>([]);
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [selectedAnswer, setSelectedAnswer] = useState<string | null>(null);
@@ -134,11 +122,7 @@ export default function Home() {
   useEffect(() => { loadData(); }, [loadData]);
 
   const currentQuestion = quizQuestions[currentQuestionIndex];
-  
-  const currentQuestionNote = useMemo(() => {
-    if (!currentQuestion) return null;
-    return notes.find(n => n.question_id === currentQuestion.id) || null;
-  }, [notes, currentQuestion]);
+  const currentQuestionNote = useMemo(() => currentQuestion ? notes.find(n => n.question_id === currentQuestion.id) || null : null, [notes, currentQuestion]);
 
   useEffect(() => {
     setCurrentNote(currentQuestionNote?.content || '');
@@ -156,14 +140,12 @@ export default function Home() {
     const correct = progress.filter(p => p.answered_correctly).length;
     const byCategory: Record<string, { attempted: number; correct: number }> = {};
     const bySubspecialty: Record<string, { attempted: number; correct: number }> = {};
-    
     progress.forEach(p => {
       const question = questions.find(q => q.id === p.question_id);
       if (question) {
         if (!byCategory[question.category]) byCategory[question.category] = { attempted: 0, correct: 0 };
         byCategory[question.category].attempted++;
         if (p.answered_correctly) byCategory[question.category].correct++;
-        
         question.subspecialties?.forEach(sub => {
           if (!bySubspecialty[sub]) bySubspecialty[sub] = { attempted: 0, correct: 0 };
           bySubspecialty[sub].attempted++;
@@ -174,30 +156,21 @@ export default function Home() {
     return { total: questions.length, attempted, correct, accuracy: attempted > 0 ? Math.round((correct / attempted) * 100) : 0, byCategory, bySubspecialty };
   }, [questions, progress]);
 
-  // Count questions per category and subspecialty
   const questionCounts = useMemo(() => {
     const byCategory: Record<string, number> = {};
     const bySubspecialty: Record<string, number> = {};
-    
     questions.forEach(q => {
       byCategory[q.category] = (byCategory[q.category] || 0) + 1;
-      q.subspecialties?.forEach(sub => {
-        bySubspecialty[sub] = (bySubspecialty[sub] || 0) + 1;
-      });
+      q.subspecialties?.forEach(sub => { bySubspecialty[sub] = (bySubspecialty[sub] || 0) + 1; });
     });
-    
     return { byCategory, bySubspecialty };
   }, [questions]);
 
-  // Available questions based on selection
-  const availableQuestions = useMemo(() => {
-    return questions.filter(q => {
-      const categoryMatch = selectedCategories.length === 0 || selectedCategories.includes(q.category);
-      const subspecialtyMatch = selectedSubspecialties.length === 0 || 
-        q.subspecialties?.some(sub => selectedSubspecialties.includes(sub));
-      return categoryMatch && subspecialtyMatch;
-    });
-  }, [questions, selectedCategories, selectedSubspecialties]);
+  const availableQuestions = useMemo(() => questions.filter(q => {
+    const categoryMatch = selectedCategories.length === 0 || selectedCategories.includes(q.category);
+    const subspecialtyMatch = selectedSubspecialties.length === 0 || q.subspecialties?.some(sub => selectedSubspecialties.includes(sub));
+    return categoryMatch && subspecialtyMatch;
+  }), [questions, selectedCategories, selectedSubspecialties]);
 
   const handleAnswer = useCallback(async (answer: string) => {
     if (showExplanation || !currentQuestion) return;
@@ -214,11 +187,7 @@ export default function Home() {
   }, [showExplanation, currentQuestion, supabase]);
 
   const goToQuestion = useCallback((i: number) => {
-    if (i >= 0 && i < quizQuestions.length) {
-      setCurrentQuestionIndex(i);
-      setSelectedAnswer(null);
-      setShowExplanation(false);
-    }
+    if (i >= 0 && i < quizQuestions.length) { setCurrentQuestionIndex(i); setSelectedAnswer(null); setShowExplanation(false); }
   }, [quizQuestions.length]);
 
   const startQuiz = useCallback(() => {
@@ -245,10 +214,7 @@ export default function Home() {
     if (!files) return;
     setUploadingImage(true);
     const urls: string[] = [];
-    for (let i = 0; i < files.length; i++) {
-      const url = await uploadImage(files[i]);
-      if (url) urls.push(url);
-    }
+    for (let i = 0; i < files.length; i++) { const url = await uploadImage(files[i]); if (url) urls.push(url); }
     setCurrentNoteImages(prev => [...prev, ...urls]);
     setUploadingImage(false);
     if (fileInputRef.current) fileInputRef.current.value = '';
@@ -270,10 +236,9 @@ export default function Home() {
   }, [currentQuestion, currentNote, currentNoteImages, currentQuestionNote, supabase]);
 
   const deleteCurrentNote = useCallback(async () => {
-    if (!currentQuestionNote || !confirm('Delete?')) return;
+    if (!currentQuestionNote || !confirm('Delete this note?')) return;
     await supabase.from('notes').delete().eq('id', currentQuestionNote.id);
-    setCurrentNote('');
-    setCurrentNoteImages([]);
+    setCurrentNote(''); setCurrentNoteImages([]);
     const { data } = await supabase.from('notes').select('*').order('updated_at', { ascending: false });
     if (data) setNotes(data);
   }, [currentQuestionNote, supabase]);
@@ -281,121 +246,117 @@ export default function Home() {
   const handleNoteChange = useCallback((e: React.ChangeEvent<HTMLTextAreaElement>) => setCurrentNote(e.target.value), []);
   const handleSearchChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => setSearchQuery(e.target.value), []);
   const removeNoteImage = useCallback((index: number) => setCurrentNoteImages(prev => prev.filter((_, i) => i !== index)), []);
-  const closeLightbox = useCallback(() => setLightboxImage(null), []);
-  const closeSidebar = useCallback(() => setSidebarOpen(false), []);
-  const openSidebar = useCallback(() => setSidebarOpen(true), []);
-  const toggleNotePanel = useCallback(() => setShowNotePanel(prev => !prev), []);
-  const closeNotePanel = useCallback(() => setShowNotePanel(false), []);
-  const openFileInput = useCallback(() => fileInputRef.current?.click(), []);
 
-  const goToDashboard = useCallback(() => { setCurrentView('dashboard'); setSidebarOpen(false); }, []);
-  const goToQuizSetup = useCallback(() => { setCurrentView('quiz-setup'); setSidebarOpen(false); }, []);
-  const goToNotes = useCallback(() => { setCurrentView('notes'); setSidebarOpen(false); }, []);
-  const goToStats = useCallback(() => { setCurrentView('stats'); setSidebarOpen(false); }, []);
-  const goToQuestionList = useCallback(() => setCurrentView('question-list'), []);
-  const goToPractice = useCallback(() => setCurrentView('practice'), []);
-
-  const categoryOptions = useMemo(() => 
-    Object.entries(CATEGORY_INFO).map(([key, info]) => ({
-      key,
-      label: `${info.name} (${questionCounts.byCategory[key] || 0})`
-    })), [questionCounts.byCategory]);
-
-  const subspecialtyOptions = useMemo(() => 
-    Object.entries(SUBSPECIALTY_INFO).map(([key, info]) => ({
-      key,
-      label: `${info.name} (${questionCounts.bySubspecialty[key] || 0})`
-    })).filter(opt => questionCounts.bySubspecialty[opt.key] > 0), [questionCounts.bySubspecialty]);
-
-  const renderProgressBar = useMemo(() => (
-    <div className="flex gap-1">
-      {quizQuestions.map((fq, i) => {
-        const p = progress.find(pr => pr.question_id === fq.id);
-        let bg = 'bg-navy-700';
-        if (p) bg = p.answered_correctly ? 'bg-green-500' : 'bg-red-500';
-        if (i === currentQuestionIndex) bg = 'bg-gold-400';
-        return <button key={fq.id} onClick={() => goToQuestion(i)} className={`flex-1 h-2 rounded-full hover:opacity-80 ${bg}`} />;
-      })}
-    </div>
-  ), [quizQuestions, progress, currentQuestionIndex, goToQuestion]);
+  const categoryOptions = useMemo(() => Object.entries(CATEGORY_INFO).map(([key, info]) => ({ key, label: info.name, count: questionCounts.byCategory[key] || 0 })), [questionCounts.byCategory]);
+  const subspecialtyOptions = useMemo(() => Object.entries(SUBSPECIALTY_INFO).map(([key, info]) => ({ key, label: info.name, count: questionCounts.bySubspecialty[key] || 0 })).filter(opt => (questionCounts.bySubspecialty[opt.key] || 0) > 0), [questionCounts.bySubspecialty]);
 
   if (loading) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-navy-950">
-        <div className="w-8 h-8 border-2 border-gold-400 border-t-transparent rounded-full animate-spin" />
+      <div className="flex min-h-screen items-center justify-center">
+        <div className="flex flex-col items-center gap-4">
+          <div className="w-10 h-10 border-3 border-blue-500 border-t-transparent rounded-full animate-spin" />
+          <p className="text-gray-500 font-medium">Loading...</p>
+        </div>
       </div>
     );
   }
 
   return (
     <div className="flex min-h-screen">
-      {lightboxImage && <Lightbox src={lightboxImage} onClose={closeLightbox} />}
-      {sidebarOpen && <div className="fixed inset-0 bg-black/50 z-40 lg:hidden" onClick={closeSidebar} />}
+      {lightboxImage && <Lightbox src={lightboxImage} onClose={() => setLightboxImage(null)} />}
+      {sidebarOpen && <div className="fixed inset-0 bg-black/20 backdrop-blur-sm z-40 lg:hidden animate-fadeIn" onClick={() => setSidebarOpen(false)} />}
       
-      <nav className={`fixed inset-y-0 left-0 z-50 w-64 bg-navy-900 border-r border-navy-700 transform transition-transform duration-300 ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'} lg:translate-x-0 lg:static`}>
+      {/* Sidebar */}
+      <nav className={`sidebar fixed inset-y-0 left-0 z-50 w-72 transform transition-transform duration-300 ease-out ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'} lg:translate-x-0 lg:static`}>
         <div className="flex flex-col h-full">
-          <div className="p-4 border-b border-navy-700">
-            <h1 className="text-xl font-bold text-gold-400">RANZCR MCQ</h1>
-            <p className="text-sm text-navy-400 mt-1">Exam Practice</p>
+          <div className="p-6">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center text-white">
+                <Icons.Sparkles />
+              </div>
+              <div>
+                <h1 className="text-xl font-bold text-gray-800">RANZCR</h1>
+                <p className="text-xs text-gray-500">Exam Preparation</p>
+              </div>
+            </div>
           </div>
-          <div className="flex-1 overflow-y-auto p-4 space-y-2">
-            <NavButton icon={<Icons.Home />} label="Dashboard" active={currentView === 'dashboard'} onClick={goToDashboard} />
-            <NavButton icon={<Icons.Play />} label="Start Quiz" active={currentView === 'quiz-setup' || currentView === 'practice'} onClick={goToQuizSetup} />
-            <NavButton icon={<Icons.Notes />} label="Notes" active={currentView === 'notes'} onClick={goToNotes} />
-            <NavButton icon={<Icons.Chart />} label="Stats" active={currentView === 'stats'} onClick={goToStats} />
+          <div className="flex-1 overflow-y-auto px-4 space-y-1">
+            <NavButton icon={<Icons.Home />} label="Dashboard" active={currentView === 'dashboard'} onClick={() => { setCurrentView('dashboard'); setSidebarOpen(false); }} />
+            <NavButton icon={<Icons.Play />} label="Start Quiz" active={currentView === 'quiz-setup' || currentView === 'practice'} onClick={() => { setCurrentView('quiz-setup'); setSidebarOpen(false); }} />
+            <NavButton icon={<Icons.Notes />} label="My Notes" active={currentView === 'notes'} onClick={() => { setCurrentView('notes'); setSidebarOpen(false); }} />
+            <NavButton icon={<Icons.Chart />} label="Statistics" active={currentView === 'stats'} onClick={() => { setCurrentView('stats'); setSidebarOpen(false); }} />
           </div>
-          <div className="p-4 border-t border-navy-700 text-xs text-navy-500">{questions.length} questions · {notes.length} notes</div>
+          <div className="p-4 mx-4 mb-4 rounded-xl bg-gray-50">
+            <div className="flex items-center justify-between text-sm">
+              <span className="text-gray-500">Total Questions</span>
+              <span className="font-bold text-gray-800">{questions.length}</span>
+            </div>
+            <div className="flex items-center justify-between text-sm mt-1">
+              <span className="text-gray-500">Notes Created</span>
+              <span className="font-bold text-gray-800">{notes.length}</span>
+            </div>
+          </div>
         </div>
       </nav>
 
+      {/* Main content */}
       <main className="flex-1 min-w-0">
-        <header className="sticky top-0 z-30 bg-navy-950/80 backdrop-blur-lg border-b border-navy-800 px-4 py-3">
+        <header className="sticky top-0 z-30 bg-white/80 backdrop-blur-lg border-b border-gray-100 px-4 lg:px-8 py-4">
           <div className="flex items-center justify-between">
-            <button onClick={openSidebar} className="lg:hidden p-2 hover:bg-navy-800 rounded-lg"><Icons.Menu /></button>
+            <button onClick={() => setSidebarOpen(true)} className="lg:hidden p-2 hover:bg-gray-100 rounded-xl transition-colors"><Icons.Menu /></button>
+            <div className="flex-1" />
             {currentView === 'practice' && quizQuestions.length > 0 && (
-              <span className="px-3 py-1 bg-gold-400/10 text-gold-400 rounded-full text-sm">
-                {CATEGORY_INFO[currentQuestion?.category]?.name}
-                {currentQuestion?.subspecialties?.length > 0 && ` · ${SUBSPECIALTY_INFO[currentQuestion.subspecialties[0]]?.name}`}
-              </span>
+              <div className="flex items-center gap-2">
+                <span className="px-3 py-1.5 bg-blue-50 text-blue-600 rounded-full text-sm font-medium">
+                  {CATEGORY_INFO[currentQuestion?.category]?.name}
+                </span>
+              </div>
             )}
           </div>
         </header>
 
-        <div className="p-4 lg:p-8">
+        <div className="p-4 lg:p-8 max-w-6xl mx-auto">
           {/* Dashboard */}
           {currentView === 'dashboard' && (
-            <div className="space-y-6">
-              <div><h2 className="text-2xl font-bold mb-2">Welcome back</h2><p className="text-navy-400">Continue your RANZCR exam preparation</p></div>
-              <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-                <StatCard label="Questions" value={stats.total} />
-                <StatCard label="Attempted" value={stats.attempted} />
-                <StatCard label="Correct" value={stats.correct} />
-                <StatCard label="Accuracy" value={`${stats.accuracy}%`} highlight />
+            <div className="space-y-8 animate-fadeIn">
+              <div>
+                <h2 className="text-3xl font-bold text-gray-800">Welcome back! 👋</h2>
+                <p className="text-gray-500 mt-1">Continue your RANZCR exam preparation</p>
               </div>
               
-              <div className="p-6 bg-navy-800/50 rounded-xl border border-navy-700">
-                <h3 className="text-lg font-semibold mb-4">Quick Start</h3>
+              <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+                <StatCard label="Total Questions" value={stats.total} gradient="stat-gradient-blue" />
+                <StatCard label="Attempted" value={stats.attempted} gradient="stat-gradient-purple" />
+                <StatCard label="Correct" value={stats.correct} gradient="stat-gradient-green" />
+                <StatCard label="Accuracy" value={`${stats.accuracy}%`} gradient="stat-gradient-amber" />
+              </div>
+              
+              <div className="elevated-card p-6">
+                <h3 className="text-lg font-bold text-gray-800 mb-4">Quick Start</h3>
                 <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-3">
                   {Object.entries(CATEGORY_INFO).map(([key, info]) => {
                     const count = questionCounts.byCategory[key] || 0;
+                    const catStats = stats.byCategory[key];
+                    const accuracy = catStats?.attempted ? Math.round((catStats.correct / catStats.attempted) * 100) : null;
                     return (
-                      <button
-                        key={key}
-                        onClick={() => { setSelectedCategories([key]); setSelectedSubspecialties([]); goToQuizSetup(); }}
-                        disabled={count === 0}
-                        className="p-4 bg-navy-800 hover:bg-navy-700 disabled:opacity-50 disabled:hover:bg-navy-800 rounded-lg text-left transition-colors"
-                      >
-                        <div className="font-medium">{info.name}</div>
-                        <div className="text-sm text-navy-400">{count} questions</div>
+                      <button key={key} onClick={() => { setSelectedCategories([key]); setSelectedSubspecialties([]); setCurrentView('quiz-setup'); }} disabled={count === 0}
+                        className="p-4 rounded-xl text-left transition-all duration-200 bg-gray-50 hover:bg-gray-100 disabled:opacity-40 disabled:hover:bg-gray-50 group">
+                        <div className="font-semibold text-gray-800 group-hover:text-blue-600 transition-colors">{info.name}</div>
+                        <div className="text-sm text-gray-500 mt-0.5">{count} questions</div>
+                        {accuracy !== null && (
+                          <div className="mt-2 flex items-center gap-2">
+                            <div className="flex-1 h-1.5 bg-gray-200 rounded-full overflow-hidden">
+                              <div className={`h-full rounded-full ${accuracy >= 70 ? 'bg-green-500' : accuracy >= 50 ? 'bg-amber-500' : 'bg-red-500'}`} style={{ width: `${accuracy}%` }} />
+                            </div>
+                            <span className="text-xs font-medium text-gray-500">{accuracy}%</span>
+                          </div>
+                        )}
                       </button>
                     );
                   })}
                 </div>
-                <button
-                  onClick={goToQuizSetup}
-                  className="mt-4 w-full flex items-center justify-center gap-2 px-4 py-3 bg-gold-500 hover:bg-gold-400 text-navy-900 font-semibold rounded-lg transition-colors"
-                >
-                  <Icons.Play /> Custom Quiz
+                <button onClick={() => setCurrentView('quiz-setup')} className="btn-primary w-full mt-4 flex items-center justify-center gap-2">
+                  <Icons.Sparkles /> Custom Quiz
                 </button>
               </div>
             </div>
@@ -403,38 +364,25 @@ export default function Home() {
 
           {/* Quiz Setup */}
           {currentView === 'quiz-setup' && (
-            <div className="max-w-2xl mx-auto space-y-6">
-              <div><h2 className="text-2xl font-bold mb-2">Start a Quiz</h2><p className="text-navy-400">Select categories and subspecialties to practice</p></div>
+            <div className="max-w-2xl mx-auto space-y-6 animate-fadeIn">
+              <div>
+                <h2 className="text-3xl font-bold text-gray-800">Create Quiz</h2>
+                <p className="text-gray-500 mt-1">Select topics to practice</p>
+              </div>
               
-              <div className="p-6 bg-navy-800/50 rounded-xl border border-navy-700 space-y-6">
-                <ChipSelect
-                  label="Categories"
-                  options={categoryOptions}
-                  selected={selectedCategories}
-                  onChange={setSelectedCategories}
-                />
-                
+              <div className="elevated-card p-6 space-y-6">
+                <ChipSelect label="Categories" options={categoryOptions.map(o => ({ ...o, label: `${o.label} (${o.count})` }))} selected={selectedCategories} onChange={setSelectedCategories} />
                 {subspecialtyOptions.length > 0 && (
-                  <ChipSelect
-                    label="Subspecialties (optional)"
-                    options={subspecialtyOptions}
-                    selected={selectedSubspecialties}
-                    onChange={setSelectedSubspecialties}
-                  />
+                  <ChipSelect label="Subspecialties" options={subspecialtyOptions.map(o => ({ ...o, label: `${o.label} (${o.count})` }))} selected={selectedSubspecialties} onChange={setSelectedSubspecialties} />
                 )}
                 
-                <div className="pt-4 border-t border-navy-700">
+                <div className="pt-6 border-t border-gray-100">
                   <div className="flex items-center justify-between mb-4">
-                    <span className="text-navy-300">Available questions:</span>
-                    <span className="text-2xl font-bold text-gold-400">{availableQuestions.length}</span>
+                    <span className="text-gray-600">Available questions</span>
+                    <span className="text-3xl font-bold text-blue-600">{availableQuestions.length}</span>
                   </div>
-                  
-                  <button
-                    onClick={startQuiz}
-                    disabled={availableQuestions.length === 0}
-                    className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-gold-500 hover:bg-gold-400 disabled:bg-navy-700 disabled:text-navy-500 text-navy-900 font-semibold rounded-lg transition-colors"
-                  >
-                    <Icons.Play /> Start Quiz ({availableQuestions.length} questions)
+                  <button onClick={startQuiz} disabled={availableQuestions.length === 0} className="btn-primary w-full flex items-center justify-center gap-2">
+                    <Icons.Play /> Start Quiz
                   </button>
                 </div>
               </div>
@@ -445,76 +393,113 @@ export default function Home() {
           {currentView === 'practice' && (
             <>
               {quizQuestions.length === 0 ? (
-                <div className="text-center py-12"><p className="text-navy-400 mb-4">No questions selected.</p><button onClick={goToQuizSetup} className="px-4 py-2 bg-gold-500 text-navy-900 font-semibold rounded-lg">Setup Quiz</button></div>
+                <div className="text-center py-16 animate-fadeIn">
+                  <p className="text-gray-500 mb-4">No questions selected</p>
+                  <button onClick={() => setCurrentView('quiz-setup')} className="btn-primary">Setup Quiz</button>
+                </div>
               ) : (
-                <div className="flex gap-4">
+                <div className="flex gap-6 animate-fadeIn">
                   <div className={`flex-1 ${showNotePanel ? 'max-w-2xl' : 'max-w-3xl mx-auto'}`}>
-                    <div className="flex items-center justify-between mb-4">
-                      <div className="flex items-center gap-2">
-                        <button onClick={goToQuestionList} className="p-2 hover:bg-navy-800 rounded-lg"><Icons.List /></button>
-                        <div className="flex flex-wrap gap-1">
-                          {currentQuestion?.subspecialties?.map(sub => (
-                            <span key={sub} className="px-2 py-0.5 bg-navy-700 rounded text-xs text-navy-300">{SUBSPECIALTY_INFO[sub]?.name}</span>
+                    {/* Progress */}
+                    <div className="mb-6">
+                      <div className="flex items-center justify-between mb-3">
+                        <button onClick={() => setCurrentView('question-list')} className="btn-secondary flex items-center gap-2"><Icons.List /> <span className="hidden sm:inline">All Questions</span></button>
+                        <span className="text-sm font-medium text-gray-500">Question {currentQuestionIndex + 1} of {quizQuestions.length}</span>
+                        <button onClick={() => setShowNotePanel(!showNotePanel)} className={`btn-secondary flex items-center gap-2 ${showNotePanel || currentQuestionNote ? '!bg-blue-50 !text-blue-600' : ''}`}>
+                          <Icons.Notes /> <span className="hidden sm:inline">{currentQuestionNote ? 'View Note' : 'Add Note'}</span>
+                        </button>
+                      </div>
+                      <div className="flex gap-1">
+                        {quizQuestions.map((fq, i) => {
+                          const p = progress.find(pr => pr.question_id === fq.id);
+                          let bg = 'bg-gray-200';
+                          if (p) bg = p.answered_correctly ? 'bg-green-500' : 'bg-red-400';
+                          if (i === currentQuestionIndex) bg = 'bg-blue-500';
+                          return <button key={fq.id} onClick={() => goToQuestion(i)} className={`progress-segment flex-1 ${bg}`} />;
+                        })}
+                      </div>
+                    </div>
+                    
+                    {/* Question Card */}
+                    <div className="quiz-card p-6 lg:p-8 mb-6">
+                      {currentQuestion?.subspecialties?.length > 0 && (
+                        <div className="flex flex-wrap gap-2 mb-4">
+                          {currentQuestion.subspecialties.map(sub => (
+                            <span key={sub} className="px-2.5 py-1 bg-gray-100 text-gray-600 rounded-lg text-xs font-medium">{SUBSPECIALTY_INFO[sub]?.name}</span>
                           ))}
                         </div>
-                      </div>
-                      <button onClick={toggleNotePanel} className={`flex items-center gap-2 px-3 py-1.5 rounded-lg ${showNotePanel || currentQuestionNote ? 'bg-gold-400/20 text-gold-400' : 'bg-navy-800 text-navy-300'}`}>
-                        <Icons.Notes /><span className="text-sm hidden sm:inline">{currentQuestionNote ? `Note` : 'Add Note'}</span>
-                      </button>
+                      )}
+                      {currentQuestion?.image_url && <img src={currentQuestion.image_url} alt="" className="w-full max-h-72 object-contain rounded-xl mb-6 bg-gray-50 cursor-pointer" onClick={() => setLightboxImage(currentQuestion.image_url!)} />}
+                      <p className="text-lg text-gray-800 leading-relaxed">{currentQuestion?.question_text}</p>
                     </div>
                     
-                    <div className="mb-6">
-                      <div className="flex justify-between text-sm text-navy-400 mb-2"><span>Q {currentQuestionIndex + 1}/{quizQuestions.length}</span><span>{CATEGORY_INFO[currentQuestion?.category]?.name}</span></div>
-                      {renderProgressBar}
-                    </div>
-                    
-                    <div className="p-6 bg-navy-800/50 rounded-xl border border-navy-700 mb-6">
-                      {currentQuestion?.image_url && <img src={currentQuestion.image_url} alt="" className="w-full max-h-64 object-contain rounded-lg mb-4 bg-navy-900 cursor-pointer" onClick={() => setLightboxImage(currentQuestion.image_url!)} />}
-                      <p className="text-lg">{currentQuestion?.question_text}</p>
-                      {currentQuestion?.tags && currentQuestion.tags.length > 0 && <div className="flex flex-wrap gap-2 mt-4">{currentQuestion.tags.map(t => <span key={t} className="px-2 py-0.5 bg-navy-700 rounded text-xs text-navy-300">{t}</span>)}</div>}
-                    </div>
-                    
+                    {/* Options */}
                     {currentQuestion?.options && (
                       <div className="space-y-3 mb-6">
                         {Object.entries(currentQuestion.options).map(([k, v]) => (
                           <button key={k} onClick={() => handleAnswer(k)} disabled={showExplanation}
                             className={`option-button ${selectedAnswer === k ? 'selected' : ''} ${showExplanation && k === currentQuestion.correct_answer ? 'correct' : ''} ${showExplanation && selectedAnswer === k && k !== currentQuestion.correct_answer ? 'incorrect' : ''}`}>
-                            <span className="inline-flex items-center justify-center w-8 h-8 rounded-full bg-navy-700 mr-3 font-semibold">{k.toUpperCase()}</span>
-                            <span>{v}</span>
+                            <span className={`inline-flex items-center justify-center w-9 h-9 rounded-xl mr-4 font-semibold text-sm transition-colors ${showExplanation && k === currentQuestion.correct_answer ? 'bg-green-500 text-white' : showExplanation && selectedAnswer === k && k !== currentQuestion.correct_answer ? 'bg-red-500 text-white' : 'bg-gray-100 text-gray-600'}`}>{k.toUpperCase()}</span>
+                            <span className="text-gray-700">{v}</span>
                           </button>
                         ))}
                       </div>
                     )}
                     
+                    {/* Explanation */}
                     {showExplanation && (
-                      <div className="mb-6">
-                        <div className={`p-4 rounded-xl ${selectedAnswer === currentQuestion?.correct_answer ? 'bg-green-500/10 border border-green-500/30' : 'bg-red-500/10 border border-red-500/30'}`}>
-                          <p className="font-semibold mb-2">{selectedAnswer === currentQuestion?.correct_answer ? '✓ Correct!' : `✗ Incorrect - ${currentQuestion?.correct_answer?.toUpperCase()}`}</p>
-                          {currentQuestion?.explanation && <p className="text-navy-300">{currentQuestion.explanation}</p>}
+                      <div className="mb-6 animate-slideUp">
+                        <div className={`p-5 rounded-2xl ${selectedAnswer === currentQuestion?.correct_answer ? 'bg-green-50 border border-green-200' : 'bg-red-50 border border-red-200'}`}>
+                          <div className="flex items-center gap-2 mb-2">
+                            {selectedAnswer === currentQuestion?.correct_answer ? (
+                              <><span className="w-6 h-6 rounded-full bg-green-500 flex items-center justify-center text-white"><Icons.Check /></span><span className="font-semibold text-green-700">Correct!</span></>
+                            ) : (
+                              <><span className="w-6 h-6 rounded-full bg-red-500 flex items-center justify-center text-white text-sm">✗</span><span className="font-semibold text-red-700">Incorrect — Answer: {currentQuestion?.correct_answer?.toUpperCase()}</span></>
+                            )}
+                          </div>
+                          {currentQuestion?.explanation && <p className="text-gray-600 leading-relaxed">{currentQuestion.explanation}</p>}
                         </div>
                       </div>
                     )}
                     
+                    {/* Navigation */}
                     <div className="flex items-center justify-between gap-4">
-                      <button onClick={() => goToQuestion(currentQuestionIndex - 1)} disabled={currentQuestionIndex === 0} className="flex items-center gap-2 px-4 py-2 bg-navy-800 hover:bg-navy-700 disabled:opacity-50 rounded-lg"><Icons.ChevronLeft /></button>
-                      <span className="text-navy-500">{currentQuestionIndex + 1}/{quizQuestions.length}</span>
-                      <button onClick={() => goToQuestion(currentQuestionIndex + 1)} disabled={currentQuestionIndex >= quizQuestions.length - 1} className="flex items-center gap-2 px-4 py-2 bg-gold-500 hover:bg-gold-400 disabled:bg-navy-700 text-navy-900 font-semibold rounded-lg"><Icons.ChevronRight /></button>
+                      <button onClick={() => goToQuestion(currentQuestionIndex - 1)} disabled={currentQuestionIndex === 0} className="btn-secondary flex items-center gap-2 disabled:opacity-40"><Icons.ChevronLeft /> <span className="hidden sm:inline">Previous</span></button>
+                      <span className="text-sm text-gray-400 font-medium">{currentQuestionIndex + 1} / {quizQuestions.length}</span>
+                      <button onClick={() => goToQuestion(currentQuestionIndex + 1)} disabled={currentQuestionIndex >= quizQuestions.length - 1} className="btn-primary flex items-center gap-2"><span className="hidden sm:inline">Next</span> <Icons.ChevronRight /></button>
                     </div>
                   </div>
                   
+                  {/* Note Panel Desktop */}
                   {showNotePanel && (
                     <div className="w-80 flex-shrink-0 hidden lg:block">
-                      <div className="sticky top-24 p-4 bg-navy-800/50 rounded-xl border border-navy-700">
-                        <div className="flex items-center justify-between mb-3"><h3 className="font-semibold text-gold-400">Notes</h3><button onClick={closeNotePanel} className="p-1 hover:bg-navy-700 rounded"><Icons.X /></button></div>
-                        <textarea value={currentNote} onChange={handleNoteChange} placeholder="Add notes..." className="w-full h-40 p-3 bg-navy-900 border border-navy-700 rounded-lg focus:border-gold-400 focus:outline-none resize-none text-sm" />
+                      <div className="note-panel sticky top-24 p-5">
+                        <div className="flex items-center justify-between mb-4">
+                          <h3 className="font-semibold text-gray-800">Notes</h3>
+                          <button onClick={() => setShowNotePanel(false)} className="p-1.5 hover:bg-gray-100 rounded-lg transition-colors text-gray-400"><Icons.X /></button>
+                        </div>
+                        <textarea value={currentNote} onChange={handleNoteChange} placeholder="Add your notes here..." className="input-field h-40 resize-none text-sm" />
                         <div className="mt-3">
                           <input ref={fileInputRef} type="file" accept="image/*" multiple onChange={handleImageUpload} className="hidden" />
-                          <button onClick={openFileInput} disabled={uploadingImage} className="flex items-center gap-2 px-3 py-1.5 text-sm bg-navy-700 hover:bg-navy-600 rounded-lg disabled:opacity-50">{uploadingImage ? 'Uploading...' : <><Icons.Image /> Add Images</>}</button>
-                          {currentNoteImages.length > 0 && <div className="flex flex-wrap gap-2 mt-3">{currentNoteImages.map((img, i) => <div key={i} className="relative group"><img src={img} alt="" className="w-16 h-16 object-cover rounded cursor-pointer" onClick={() => setLightboxImage(img)} /><button onClick={() => removeNoteImage(i)} className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 text-white rounded-full text-xs opacity-0 group-hover:opacity-100">×</button></div>)}</div>}
+                          <button onClick={() => fileInputRef.current?.click()} disabled={uploadingImage} className="btn-secondary flex items-center gap-2 text-sm w-full justify-center">
+                            {uploadingImage ? 'Uploading...' : <><Icons.Image /> Add Images</>}
+                          </button>
+                          {currentNoteImages.length > 0 && (
+                            <div className="flex flex-wrap gap-2 mt-3">
+                              {currentNoteImages.map((img, i) => (
+                                <div key={i} className="relative group">
+                                  <img src={img} alt="" className="w-16 h-16 object-cover rounded-lg cursor-pointer" onClick={() => setLightboxImage(img)} />
+                                  <button onClick={() => removeNoteImage(i)} className="absolute -top-1.5 -right-1.5 w-5 h-5 bg-red-500 text-white rounded-full text-xs opacity-0 group-hover:opacity-100 transition-opacity">×</button>
+                                </div>
+                              ))}
+                            </div>
+                          )}
                         </div>
-                        <div className="flex gap-2 mt-3">
-                          <button onClick={saveNote} disabled={savingNote || (!currentNote.trim() && currentNoteImages.length === 0)} className="flex-1 flex items-center justify-center gap-2 px-3 py-2 bg-gold-500 hover:bg-gold-400 disabled:bg-navy-700 disabled:text-navy-500 text-navy-900 font-semibold rounded-lg text-sm"><Icons.Save />{savingNote ? 'Saving...' : 'Save'}</button>
-                          {currentQuestionNote && <button onClick={deleteCurrentNote} className="p-2 bg-red-500/20 hover:bg-red-500/30 text-red-400 rounded-lg"><Icons.Trash /></button>}
+                        <div className="flex gap-2 mt-4">
+                          <button onClick={saveNote} disabled={savingNote || (!currentNote.trim() && currentNoteImages.length === 0)} className="btn-primary flex-1 flex items-center justify-center gap-2 text-sm py-2.5">
+                            <Icons.Save /> {savingNote ? 'Saving...' : 'Save'}
+                          </button>
+                          {currentQuestionNote && <button onClick={deleteCurrentNote} className="p-2.5 bg-red-50 hover:bg-red-100 text-red-500 rounded-xl transition-colors"><Icons.Trash /></button>}
                         </div>
                       </div>
                     </div>
@@ -522,17 +507,23 @@ export default function Home() {
                 </div>
               )}
               
+              {/* Note Panel Mobile */}
               {showNotePanel && quizQuestions.length > 0 && (
-                <div className="lg:hidden fixed inset-x-0 bottom-0 z-50 p-4 bg-navy-900 border-t border-navy-700 rounded-t-2xl max-h-[70vh] overflow-y-auto">
-                  <div className="flex items-center justify-between mb-3"><h3 className="font-semibold text-gold-400">Notes</h3><button onClick={closeNotePanel} className="p-1 hover:bg-navy-700 rounded"><Icons.X /></button></div>
-                  <textarea value={currentNote} onChange={handleNoteChange} placeholder="Add notes..." className="w-full h-24 p-3 bg-navy-800 border border-navy-700 rounded-lg focus:border-gold-400 focus:outline-none resize-none text-sm" />
-                  <div className="mt-3">
-                    <button onClick={openFileInput} disabled={uploadingImage} className="flex items-center gap-2 px-3 py-1.5 text-sm bg-navy-700 hover:bg-navy-600 rounded-lg disabled:opacity-50">{uploadingImage ? 'Uploading...' : <><Icons.Image /> Add Images</>}</button>
-                    {currentNoteImages.length > 0 && <div className="flex flex-wrap gap-2 mt-3">{currentNoteImages.map((img, i) => <div key={i} className="relative group"><img src={img} alt="" className="w-16 h-16 object-cover rounded cursor-pointer" onClick={() => setLightboxImage(img)} /><button onClick={() => removeNoteImage(i)} className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 text-white rounded-full text-xs">×</button></div>)}</div>}
+                <div className="lg:hidden fixed inset-x-0 bottom-0 z-50 bottom-sheet p-5 max-h-[70vh] overflow-y-auto animate-slideUp">
+                  <div className="flex items-center justify-between mb-4">
+                    <h3 className="font-semibold text-gray-800">Notes</h3>
+                    <button onClick={() => setShowNotePanel(false)} className="p-1.5 hover:bg-gray-100 rounded-lg text-gray-400"><Icons.X /></button>
                   </div>
-                  <div className="flex gap-2 mt-3">
-                    <button onClick={saveNote} disabled={savingNote || (!currentNote.trim() && currentNoteImages.length === 0)} className="flex-1 flex items-center justify-center gap-2 px-3 py-2 bg-gold-500 hover:bg-gold-400 disabled:bg-navy-700 disabled:text-navy-500 text-navy-900 font-semibold rounded-lg text-sm"><Icons.Save />{savingNote ? 'Saving...' : 'Save'}</button>
-                    {currentQuestionNote && <button onClick={deleteCurrentNote} className="p-2 bg-red-500/20 hover:bg-red-500/30 text-red-400 rounded-lg"><Icons.Trash /></button>}
+                  <textarea value={currentNote} onChange={handleNoteChange} placeholder="Add your notes..." className="input-field h-24 resize-none text-sm" />
+                  <div className="mt-3">
+                    <button onClick={() => fileInputRef.current?.click()} disabled={uploadingImage} className="btn-secondary flex items-center gap-2 text-sm">
+                      {uploadingImage ? 'Uploading...' : <><Icons.Image /> Add Images</>}
+                    </button>
+                    {currentNoteImages.length > 0 && <div className="flex flex-wrap gap-2 mt-3">{currentNoteImages.map((img, i) => <div key={i} className="relative"><img src={img} alt="" className="w-16 h-16 object-cover rounded-lg cursor-pointer" onClick={() => setLightboxImage(img)} /><button onClick={() => removeNoteImage(i)} className="absolute -top-1.5 -right-1.5 w-5 h-5 bg-red-500 text-white rounded-full text-xs">×</button></div>)}</div>}
+                  </div>
+                  <div className="flex gap-2 mt-4">
+                    <button onClick={saveNote} disabled={savingNote || (!currentNote.trim() && currentNoteImages.length === 0)} className="btn-primary flex-1 flex items-center justify-center gap-2 text-sm py-2.5"><Icons.Save /> {savingNote ? 'Saving...' : 'Save'}</button>
+                    {currentQuestionNote && <button onClick={deleteCurrentNote} className="p-2.5 bg-red-50 text-red-500 rounded-xl"><Icons.Trash /></button>}
                   </div>
                 </div>
               )}
@@ -541,17 +532,24 @@ export default function Home() {
 
           {/* Question List */}
           {currentView === 'question-list' && (
-            <div>
-              <div className="flex items-center justify-between mb-6"><h2 className="text-2xl font-bold">Questions</h2><button onClick={goToPractice} className="px-4 py-2 bg-navy-800 hover:bg-navy-700 rounded-lg">Back</button></div>
+            <div className="animate-fadeIn">
+              <div className="flex items-center justify-between mb-6">
+                <h2 className="text-2xl font-bold text-gray-800">All Questions</h2>
+                <button onClick={() => setCurrentView('practice')} className="btn-secondary">Back to Quiz</button>
+              </div>
               <div className="grid gap-3">
                 {quizQuestions.map((q, i) => {
                   const p = progress.find(pr => pr.question_id === q.id);
                   const n = notes.find(nt => nt.question_id === q.id);
                   return (
-                    <button key={q.id} onClick={() => { goToQuestion(i); goToPractice(); }} className={`w-full text-left p-4 rounded-xl border hover:border-navy-500 ${i === currentQuestionIndex ? 'bg-gold-400/10 border-gold-400/30' : 'bg-navy-800/50 border-navy-700'}`}>
+                    <button key={q.id} onClick={() => { goToQuestion(i); setCurrentView('practice'); }}
+                      className={`elevated-card w-full text-left p-4 ${i === currentQuestionIndex ? 'ring-2 ring-blue-500' : ''}`}>
                       <div className="flex items-start gap-3">
-                        <span className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-semibold ${p ? p.answered_correctly ? 'bg-green-500/20 text-green-400' : 'bg-red-500/20 text-red-400' : 'bg-navy-700 text-navy-400'}`}>{i + 1}</span>
-                        <div className="flex-1"><p className="line-clamp-2">{q.question_text}</p>{n && <span className="mt-2 inline-block px-2 py-0.5 bg-gold-400/20 text-gold-400 rounded text-xs">Note</span>}</div>
+                        <span className={`w-8 h-8 rounded-xl flex items-center justify-center text-sm font-semibold ${p ? p.answered_correctly ? 'bg-green-100 text-green-600' : 'bg-red-100 text-red-600' : 'bg-gray-100 text-gray-500'}`}>{i + 1}</span>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-gray-700 line-clamp-2">{q.question_text}</p>
+                          {n && <span className="mt-2 inline-block px-2 py-0.5 bg-blue-50 text-blue-600 rounded text-xs font-medium">Has note</span>}
+                        </div>
                       </div>
                     </button>
                   );
@@ -562,22 +560,24 @@ export default function Home() {
 
           {/* Notes */}
           {currentView === 'notes' && (
-            <div className="space-y-6">
-              <h2 className="text-2xl font-bold">All Notes</h2>
+            <div className="space-y-6 animate-fadeIn">
+              <h2 className="text-3xl font-bold text-gray-800">My Notes</h2>
               <div className="relative">
-                <input type="text" placeholder="Search..." value={searchQuery} onChange={handleSearchChange} className="w-full pl-10 pr-4 py-3 bg-navy-800 border border-navy-700 rounded-lg focus:border-gold-400 focus:outline-none" />
-                <div className="absolute left-3 top-1/2 -translate-y-1/2 text-navy-500"><Icons.Search /></div>
+                <input type="text" placeholder="Search notes..." value={searchQuery} onChange={handleSearchChange} className="input-field pl-11" />
+                <div className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400"><Icons.Search /></div>
               </div>
-              {filteredNotes.length === 0 ? <p className="text-center py-12 text-navy-400">No notes yet.</p> : (
-                <div className="space-y-3">
+              {filteredNotes.length === 0 ? (
+                <div className="text-center py-16"><p className="text-gray-400">No notes yet</p></div>
+              ) : (
+                <div className="grid gap-4">
                   {filteredNotes.map(n => (
-                    <div key={n.id} className="p-4 bg-navy-800/50 rounded-xl border border-navy-700">
-                      <div className="flex justify-between items-start mb-2">
-                        <h3 className="font-semibold">{n.title}</h3>
-                        <button onClick={async () => { if (confirm('Delete?')) { await supabase.from('notes').delete().eq('id', n.id); loadData(); }}} className="text-navy-500 hover:text-red-400"><Icons.Trash /></button>
+                    <div key={n.id} className="elevated-card p-5">
+                      <div className="flex justify-between items-start mb-3">
+                        <h3 className="font-semibold text-gray-800">{n.title}</h3>
+                        <button onClick={async () => { if (confirm('Delete this note?')) { await supabase.from('notes').delete().eq('id', n.id); loadData(); }}} className="text-gray-300 hover:text-red-500 transition-colors"><Icons.Trash /></button>
                       </div>
-                      <p className="text-navy-300">{n.content}</p>
-                      {n.images && n.images.length > 0 && <div className="flex flex-wrap gap-2 mt-3">{n.images.map((img, i) => <img key={i} src={img} alt="" className="w-16 h-16 object-cover rounded cursor-pointer" onClick={() => setLightboxImage(img)} />)}</div>}
+                      <p className="text-gray-600">{n.content}</p>
+                      {n.images && n.images.length > 0 && <div className="flex flex-wrap gap-2 mt-3">{n.images.map((img, i) => <img key={i} src={img} alt="" className="w-16 h-16 object-cover rounded-lg cursor-pointer" onClick={() => setLightboxImage(img)} />)}</div>}
                     </div>
                   ))}
                 </div>
@@ -587,30 +587,35 @@ export default function Home() {
 
           {/* Stats */}
           {currentView === 'stats' && (
-            <div className="space-y-6">
-              <h2 className="text-2xl font-bold">Statistics</h2>
+            <div className="space-y-8 animate-fadeIn">
+              <h2 className="text-3xl font-bold text-gray-800">Statistics</h2>
               <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-                <StatCard label="Total" value={stats.total} />
-                <StatCard label="Attempted" value={stats.attempted} />
-                <StatCard label="Correct" value={stats.correct} />
-                <StatCard label="Accuracy" value={`${stats.accuracy}%`} highlight />
+                <StatCard label="Total Questions" value={stats.total} gradient="stat-gradient-blue" />
+                <StatCard label="Attempted" value={stats.attempted} gradient="stat-gradient-purple" />
+                <StatCard label="Correct" value={stats.correct} gradient="stat-gradient-green" />
+                <StatCard label="Accuracy" value={`${stats.accuracy}%`} gradient="stat-gradient-amber" />
               </div>
               
-              <div>
-                <h3 className="text-lg font-semibold mb-4">By Category</h3>
-                <div className="space-y-3">
+              <div className="elevated-card p-6">
+                <h3 className="text-lg font-bold text-gray-800 mb-4">Performance by Category</h3>
+                <div className="space-y-4">
                   {Object.entries(CATEGORY_INFO).map(([cat, info]) => {
                     const cs = stats.byCategory[cat] || { attempted: 0, correct: 0 };
                     const acc = cs.attempted > 0 ? Math.round((cs.correct / cs.attempted) * 100) : 0;
                     const qc = questionCounts.byCategory[cat] || 0;
                     if (qc === 0) return null;
                     return (
-                      <div key={cat} className="p-4 bg-navy-800/50 rounded-xl border border-navy-700">
+                      <div key={cat}>
                         <div className="flex justify-between items-center mb-2">
-                          <span className="font-medium">{info.name} ({qc})</span>
-                          <span className={`font-bold ${acc >= 70 ? 'text-green-400' : acc >= 50 ? 'text-yellow-400' : cs.attempted ? 'text-red-400' : 'text-navy-500'}`}>{cs.attempted ? `${acc}%` : '-'}</span>
+                          <span className="font-medium text-gray-700">{info.name}</span>
+                          <span className={`font-bold ${acc >= 70 ? 'text-green-600' : acc >= 50 ? 'text-amber-600' : cs.attempted ? 'text-red-600' : 'text-gray-400'}`}>
+                            {cs.attempted ? `${acc}%` : '—'}
+                          </span>
                         </div>
-                        <div className="h-2 bg-navy-700 rounded-full"><div className={`h-full rounded-full ${acc >= 70 ? 'bg-green-500' : acc >= 50 ? 'bg-yellow-500' : 'bg-red-500'}`} style={{ width: `${acc}%` }} /></div>
+                        <div className="h-2 bg-gray-100 rounded-full overflow-hidden">
+                          <div className={`h-full rounded-full transition-all ${acc >= 70 ? 'bg-green-500' : acc >= 50 ? 'bg-amber-500' : 'bg-red-500'}`} style={{ width: `${acc}%` }} />
+                        </div>
+                        <p className="text-xs text-gray-400 mt-1">{cs.correct} of {cs.attempted} correct · {qc} questions total</p>
                       </div>
                     );
                   })}
@@ -618,20 +623,20 @@ export default function Home() {
               </div>
 
               {Object.keys(stats.bySubspecialty).length > 0 && (
-                <div>
-                  <h3 className="text-lg font-semibold mb-4">By Subspecialty</h3>
-                  <div className="grid sm:grid-cols-2 gap-3">
+                <div className="elevated-card p-6">
+                  <h3 className="text-lg font-bold text-gray-800 mb-4">Performance by Subspecialty</h3>
+                  <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-3">
                     {Object.entries(SUBSPECIALTY_INFO).map(([sub, info]) => {
                       const ss = stats.bySubspecialty[sub];
                       if (!ss) return null;
                       const acc = ss.attempted > 0 ? Math.round((ss.correct / ss.attempted) * 100) : 0;
                       return (
-                        <div key={sub} className="p-3 bg-navy-800/50 rounded-lg border border-navy-700">
+                        <div key={sub} className="p-4 bg-gray-50 rounded-xl">
                           <div className="flex justify-between items-center">
-                            <span className="text-sm">{info.name}</span>
-                            <span className={`text-sm font-bold ${acc >= 70 ? 'text-green-400' : acc >= 50 ? 'text-yellow-400' : 'text-red-400'}`}>{acc}%</span>
+                            <span className="font-medium text-gray-700">{info.name}</span>
+                            <span className={`font-bold ${acc >= 70 ? 'text-green-600' : acc >= 50 ? 'text-amber-600' : 'text-red-600'}`}>{acc}%</span>
                           </div>
-                          <div className="text-xs text-navy-500 mt-1">{ss.correct}/{ss.attempted} correct</div>
+                          <p className="text-xs text-gray-400 mt-1">{ss.correct}/{ss.attempted} correct</p>
                         </div>
                       );
                     })}
