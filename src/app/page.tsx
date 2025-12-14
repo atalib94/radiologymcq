@@ -156,6 +156,24 @@ export default function Home() {
     if (data) setNotes(data);
   }
 
+  const renderNotePanel = (isMobile = false) => (
+    <div className={isMobile ? "" : "sticky top-24"}>
+      <div className="p-4 bg-navy-800/50 rounded-xl border border-navy-700">
+        <div className="flex items-center justify-between mb-3"><h3 className="font-semibold text-gold-400">Notes</h3><button onClick={() => setShowNotePanel(false)} className="p-1 hover:bg-navy-700 rounded"><Icons.X /></button></div>
+        <textarea value={currentNote} onChange={e => setCurrentNote(e.target.value)} placeholder="Add notes..." className={`w-full p-3 bg-navy-900 border border-navy-700 rounded-lg focus:border-gold-400 focus:outline-none resize-none text-sm ${isMobile ? 'h-24' : 'h-40'}`} />
+        <div className="mt-3">
+          <input ref={fileInputRef} type="file" accept="image/*" multiple onChange={handleImageUpload} className="hidden" />
+          <button onClick={() => fileInputRef.current?.click()} disabled={uploadingImage} className="flex items-center gap-2 px-3 py-1.5 text-sm bg-navy-700 hover:bg-navy-600 rounded-lg disabled:opacity-50">{uploadingImage ? 'Uploading...' : <><Icons.Image /> Add Images</>}</button>
+          {currentNoteImages.length > 0 && <div className="flex flex-wrap gap-2 mt-3">{currentNoteImages.map((img, i) => <img key={i} src={img} alt="" className="w-20 h-20 object-cover rounded-lg cursor-pointer hover:opacity-80 border border-navy-600" onClick={() => setLightboxImage(img)} />)}</div>}
+        </div>
+        <div className="flex gap-2 mt-3">
+          <button onClick={saveNote} disabled={savingNote || (!currentNote.trim() && currentNoteImages.length === 0)} className="flex-1 flex items-center justify-center gap-2 px-3 py-2 bg-gold-500 hover:bg-gold-400 disabled:bg-navy-700 disabled:text-navy-500 text-navy-900 font-semibold rounded-lg text-sm"><Icons.Save />{savingNote ? 'Saving...' : 'Save'}</button>
+          {currentQuestionNote && <button onClick={deleteCurrentNote} className="p-2 bg-red-500/20 hover:bg-red-500/30 text-red-400 rounded-lg"><Icons.Trash /></button>}
+        </div>
+      </div>
+    </div>
+  );
+
   const Lightbox = ({ src, onClose }: { src: string; onClose: () => void }) => (
     <div className="fixed inset-0 z-[100] bg-black/90 flex items-center justify-center p-4" onClick={onClose}>
       <button onClick={onClose} className="absolute top-4 right-4 p-2 text-white hover:bg-white/10 rounded-full"><Icons.X /></button>
@@ -191,24 +209,6 @@ export default function Home() {
     );
   };
 
-  const NotePanel = ({ isMobile = false }: { isMobile?: boolean }) => (
-    <div className={isMobile ? "" : "sticky top-24"}>
-      <div className="p-4 bg-navy-800/50 rounded-xl border border-navy-700">
-        <div className="flex items-center justify-between mb-3"><h3 className="font-semibold text-gold-400">Notes</h3><button onClick={() => setShowNotePanel(false)} className="p-1 hover:bg-navy-700 rounded"><Icons.X /></button></div>
-        <textarea value={currentNote} onChange={e => setCurrentNote(e.target.value)} placeholder="Add notes..." className={`w-full p-3 bg-navy-900 border border-navy-700 rounded-lg focus:border-gold-400 focus:outline-none resize-none text-sm ${isMobile ? 'h-24' : 'h-40'}`} />
-        <div className="mt-3">
-          <input ref={fileInputRef} type="file" accept="image/*" multiple onChange={handleImageUpload} className="hidden" />
-          <button onClick={() => fileInputRef.current?.click()} disabled={uploadingImage} className="flex items-center gap-2 px-3 py-1.5 text-sm bg-navy-700 hover:bg-navy-600 rounded-lg disabled:opacity-50">{uploadingImage ? 'Uploading...' : <><Icons.Image /> Add Images</>}</button>
-          {currentNoteImages.length > 0 && <div className="flex flex-wrap gap-2 mt-3">{currentNoteImages.map((img, i) => <ImageThumbnail key={i} src={img} onRemove={() => setCurrentNoteImages(currentNoteImages.filter((_, j) => j !== i))} onClick={() => setLightboxImage(img)} />)}</div>}
-        </div>
-        <div className="flex gap-2 mt-3">
-          <button onClick={saveNote} disabled={savingNote || (!currentNote.trim() && currentNoteImages.length === 0)} className="flex-1 flex items-center justify-center gap-2 px-3 py-2 bg-gold-500 hover:bg-gold-400 disabled:bg-navy-700 disabled:text-navy-500 text-navy-900 font-semibold rounded-lg text-sm"><Icons.Save />{savingNote ? 'Saving...' : 'Save'}</button>
-          {currentQuestionNote && <button onClick={deleteCurrentNote} className="p-2 bg-red-500/20 hover:bg-red-500/30 text-red-400 rounded-lg"><Icons.Trash /></button>}
-        </div>
-      </div>
-    </div>
-  );
-
   const DashboardView = () => (
     <div className="space-y-6 animate-fadeIn">
       <div><h2 className="text-2xl font-bold mb-2">Welcome back</h2><p className="text-navy-400">Continue your RANZCR exam preparation</p></div>
@@ -242,9 +242,9 @@ export default function Home() {
               <button onClick={() => goToQuestion(currentQuestionIndex + 1)} disabled={currentQuestionIndex >= filteredQuestions.length - 1} className="flex items-center gap-2 px-4 py-2 bg-gold-500 hover:bg-gold-400 disabled:bg-navy-700 text-navy-900 font-semibold rounded-lg"><Icons.ChevronRight /></button>
             </div>
           </div>
-          {showNotePanel && <div className="w-80 flex-shrink-0 hidden lg:block"><NotePanel /></div>}
+          {showNotePanel && <div className="w-80 flex-shrink-0 hidden lg:block">{renderNotePanel()}</div>}
         </div>
-        {showNotePanel && <div className="lg:hidden fixed inset-x-0 bottom-0 z-50 p-4 bg-navy-900 border-t border-navy-700 rounded-t-2xl max-h-[70vh] overflow-y-auto"><NotePanel isMobile /></div>}
+        {showNotePanel && <div className="lg:hidden fixed inset-x-0 bottom-0 z-50 p-4 bg-navy-900 border-t border-navy-700 rounded-t-2xl max-h-[70vh] overflow-y-auto">{renderNotePanel(true)}</div>}
       </div>
     );
   };
