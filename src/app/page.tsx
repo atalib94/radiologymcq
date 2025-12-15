@@ -58,7 +58,7 @@ const Icons = {
 };
 
 const NavButton = memo(({ icon, label, active, onClick }: { icon: React.ReactNode; label: string; active?: boolean; onClick: () => void }) => (
-  <button onClick={onClick} className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-left transition-all duration-200 ${active ? 'bg-blue-50 text-blue-600 font-medium' : 'text-gray-600 hover:bg-gray-100'}`}>
+  <button onClick={onClick} className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-left transition-all duration-200 ${active ? 'bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 font-medium' : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800'}`}>
     {icon}<span>{label}</span>
   </button>
 ));
@@ -66,8 +66,8 @@ NavButton.displayName = 'NavButton';
 
 const StatCard = memo(({ label, value, gradient }: { label: string; value: string | number; gradient: string }) => (
   <div className={`p-4 sm:p-5 rounded-2xl ${gradient}`}>
-    <p className="text-xs sm:text-sm font-medium text-gray-500">{label}</p>
-    <p className="text-2xl sm:text-3xl font-bold text-gray-800 mt-1">{value}</p>
+    <p className="text-xs sm:text-sm font-medium text-gray-500 dark:text-gray-400">{label}</p>
+    <p className="text-2xl sm:text-3xl font-bold text-gray-800 dark:text-gray-100 mt-1">{value}</p>
   </div>
 ));
 StatCard.displayName = 'StatCard';
@@ -80,6 +80,109 @@ const Lightbox = memo(({ src, onClose }: { src: string; onClose: () => void }) =
 ));
 Lightbox.displayName = 'Lightbox';
 
+// Settings Panel Component
+const SettingsPanel = memo(({ open, onClose }: { open: boolean; onClose: () => void }) => {
+  const { theme, setTheme, textSize, setTextSize } = useSettings();
+  
+  return (
+    <>
+      {/* Overlay */}
+      <div 
+        className={`settings-overlay ${open ? 'open' : ''}`}
+        onClick={onClose}
+      />
+      
+      {/* Panel */}
+      <div className={`settings-panel ${open ? 'open' : ''}`}>
+        <div className="flex flex-col h-full">
+          {/* Header */}
+          <div className="flex items-center justify-between p-4 border-b border-gray-200 dark:border-gray-700">
+            <h2 className="text-lg font-bold text-gray-800 dark:text-gray-100">Settings</h2>
+            <button 
+              onClick={onClose}
+              className="p-2 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors"
+            >
+              <Icons.X />
+            </button>
+          </div>
+          
+          {/* Content */}
+          <div className="flex-1 overflow-y-auto p-4 space-y-6">
+            {/* Theme Selection */}
+            <div>
+              <div className="flex items-center gap-2 mb-3">
+                <Icons.Moon />
+                <span className="text-sm font-semibold text-gray-700 dark:text-gray-300">Appearance</span>
+              </div>
+              <div className="theme-group">
+                <button 
+                  onClick={() => setTheme('light')}
+                  className={`theme-btn ${theme === 'light' ? 'active' : ''}`}
+                >
+                  <Icons.Sun />
+                  <span>Light</span>
+                </button>
+                <button 
+                  onClick={() => setTheme('dark')}
+                  className={`theme-btn ${theme === 'dark' ? 'active' : ''}`}
+                >
+                  <Icons.Moon />
+                  <span>Dark</span>
+                </button>
+                <button 
+                  onClick={() => setTheme('system')}
+                  className={`theme-btn ${theme === 'system' ? 'active' : ''}`}
+                >
+                  <Icons.Monitor />
+                  <span>Auto</span>
+                </button>
+              </div>
+            </div>
+            
+            {/* Text Size */}
+            <div>
+              <div className="flex items-center gap-2 mb-3">
+                <Icons.TextSize />
+                <span className="text-sm font-semibold text-gray-700 dark:text-gray-300">Text Size</span>
+              </div>
+              <div className="text-size-group">
+                <button 
+                  onClick={() => setTextSize('small')}
+                  className={`text-size-btn ${textSize === 'small' ? 'active' : ''}`}
+                >
+                  <span className="text-xs">A</span>
+                  <span className="text-xs ml-1">Small</span>
+                </button>
+                <button 
+                  onClick={() => setTextSize('medium')}
+                  className={`text-size-btn ${textSize === 'medium' ? 'active' : ''}`}
+                >
+                  <span className="text-sm">A</span>
+                  <span className="text-xs ml-1">Medium</span>
+                </button>
+                <button 
+                  onClick={() => setTextSize('large')}
+                  className={`text-size-btn ${textSize === 'large' ? 'active' : ''}`}
+                >
+                  <span className="text-base">A</span>
+                  <span className="text-xs ml-1">Large</span>
+                </button>
+              </div>
+              
+              {/* Preview */}
+              <div className="mt-4 p-4 bg-gray-50 dark:bg-gray-800 rounded-xl">
+                <p className="text-sm text-gray-500 dark:text-gray-400 mb-2">Preview:</p>
+                <p className="question-text">This is how question text will appear at this size setting.</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </>
+  );
+});
+SettingsPanel.displayName = 'SettingsPanel';
+
 const ChipSelect = memo(({ options, selected, onChange, label }: { 
   options: { key: string; label: string; count?: number }[]; 
   selected: string[]; 
@@ -90,10 +193,10 @@ const ChipSelect = memo(({ options, selected, onChange, label }: {
   return (
     <div className="space-y-3">
       <div className="flex items-center justify-between">
-        <span className="text-sm font-semibold text-gray-700">{label}</span>
+        <span className="text-sm font-semibold text-gray-700 dark:text-gray-300">{label}</span>
         <div className="flex gap-3 text-xs font-medium">
-          <button onClick={() => onChange(options.map(o => o.key))} className="text-blue-600 hover:text-blue-700">Select all</button>
-          <button onClick={() => onChange([])} className="text-gray-400 hover:text-gray-600">Clear</button>
+          <button onClick={() => onChange(options.map(o => o.key))} className="text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300">Select all</button>
+          <button onClick={() => onChange([])} className="text-gray-400 hover:text-gray-600 dark:text-gray-500 dark:hover:text-gray-400">Clear</button>
         </div>
       </div>
       <div className="flex flex-wrap gap-2">
@@ -140,16 +243,16 @@ const NoteEditor = memo(({
     <div className={`note-box ${className}`}>
       {showHeader && (
         <div className="flex items-center justify-between mb-3">
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 text-gray-700 dark:text-gray-300">
             <Icons.Notes />
-            <span className="font-medium text-gray-700">{title || 'My Notes'}</span>
+            <span className="font-medium">{title || 'My Notes'}</span>
           </div>
           <div className="flex items-center gap-1">
             {onCancel && (
-              <button onClick={onCancel} className="text-sm text-gray-400 hover:text-gray-600 mr-2">Cancel</button>
+              <button onClick={onCancel} className="text-sm text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 mr-2">Cancel</button>
             )}
             {hasExistingNote && onDelete && (
-              <button onClick={onDelete} className="p-1.5 text-gray-400 hover:text-red-500 hover:bg-gray-100 rounded-lg transition-colors" title="Delete note">
+              <button onClick={onDelete} className="p-1.5 text-gray-400 hover:text-red-500 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors" title="Delete note">
                 <Icons.Trash />
               </button>
             )}
@@ -191,8 +294,10 @@ type QuizMode = 'all' | 'spaced' | 'wrong-only' | 'unmastered';
 
 export default function Home() {
   const { user, loading: authLoading, signOut } = useAuth();
+  const { theme, resolvedTheme } = useSettings();
   const [currentView, setCurrentView] = useState<View>('dashboard');
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [settingsOpen, setSettingsOpen] = useState(false);
   const [questions, setQuestions] = useState<Question[]>([]);
   const [notes, setNotes] = useState<Note[]>([]);
   const [progress, setProgress] = useState<UserProgress[]>([]);
@@ -663,7 +768,10 @@ export default function Home() {
   return (
     <div className="flex min-h-screen">
       {lightboxImage && <Lightbox src={lightboxImage} onClose={() => setLightboxImage(null)} />}
-      {sidebarOpen && <div className="fixed inset-0 bg-black/20 backdrop-blur-sm z-40 lg:hidden animate-fadeIn" onClick={() => setSidebarOpen(false)} />}
+      {sidebarOpen && <div className="fixed inset-0 bg-black/20 dark:bg-black/50 backdrop-blur-sm z-40 lg:hidden animate-fadeIn" onClick={() => setSidebarOpen(false)} />}
+      
+      {/* Settings Panel */}
+      <SettingsPanel open={settingsOpen} onClose={() => setSettingsOpen(false)} />
       
       {/* Sidebar */}
       <nav className={`sidebar fixed inset-y-0 left-0 z-50 w-72 transform transition-transform duration-300 ease-out ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'} lg:translate-x-0 lg:static`}>
@@ -672,8 +780,8 @@ export default function Home() {
             <div className="flex items-center gap-3">
               <img src="/logo.png" alt="Logo" className="w-10 h-10 rounded-xl" />
               <div>
-                <h1 className="text-lg font-bold text-gray-800">Diagnostic</h1>
-                <p className="text-sm font-semibold text-blue-600">Excellence</p>
+                <h1 className="text-lg font-bold text-gray-800 dark:text-gray-100">Diagnostic</h1>
+                <p className="text-sm font-semibold text-blue-600 dark:text-blue-400">Excellence</p>
               </div>
             </div>
           </div>
@@ -683,33 +791,33 @@ export default function Home() {
             <NavButton icon={<Icons.Notes />} label="My Notes" active={currentView === 'notes'} onClick={() => { setCurrentView('notes'); setSidebarOpen(false); }} />
             <NavButton icon={<Icons.Chart />} label="Statistics" active={currentView === 'stats'} onClick={() => { setCurrentView('stats'); setSidebarOpen(false); }} />
           </div>
-          <div className="p-4 mx-4 mb-2 rounded-xl bg-gray-50">
+          <div className="p-4 mx-4 mb-2 rounded-xl bg-gray-50 dark:bg-gray-800">
             <div className="flex items-center justify-between text-sm">
-              <span className="text-gray-500">Total Questions</span>
-              <span className="font-bold text-gray-800">{questions.length}</span>
+              <span className="text-gray-500 dark:text-gray-400">Total Questions</span>
+              <span className="font-bold text-gray-800 dark:text-gray-100">{questions.length}</span>
             </div>
             <div className="flex items-center justify-between text-sm mt-1">
-              <span className="text-gray-500">Mastered</span>
-              <span className="font-bold text-green-600">{srStats.masteredCount}</span>
+              <span className="text-gray-500 dark:text-gray-400">Mastered</span>
+              <span className="font-bold text-green-600 dark:text-green-400">{srStats.masteredCount}</span>
             </div>
             <div className="flex items-center justify-between text-sm mt-1">
-              <span className="text-gray-500">Due for Review</span>
-              <span className="font-bold text-purple-600">{srStats.dueCount}</span>
+              <span className="text-gray-500 dark:text-gray-400">Due for Review</span>
+              <span className="font-bold text-purple-600 dark:text-purple-400">{srStats.dueCount}</span>
             </div>
             <div className="flex items-center justify-between text-sm mt-1">
-              <span className="text-gray-500">Notes Created</span>
-              <span className="font-bold text-gray-800">{notes.length}</span>
+              <span className="text-gray-500 dark:text-gray-400">Notes Created</span>
+              <span className="font-bold text-gray-800 dark:text-gray-100">{notes.length}</span>
             </div>
           </div>
           {/* User info and logout */}
-          <div className="p-4 mx-4 mb-4 border-t border-gray-100">
+          <div className="p-4 mx-4 mb-4 border-t border-gray-100 dark:border-gray-700">
             <div className="flex items-center gap-3 mb-3">
-              <div className="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center text-blue-600">
+              <div className="w-8 h-8 rounded-full bg-blue-100 dark:bg-blue-900/50 flex items-center justify-center text-blue-600 dark:text-blue-400">
                 <Icons.User />
               </div>
               <div className="flex-1 min-w-0">
-                <p className="text-sm font-medium text-gray-800 truncate">{user?.user_metadata?.name || 'User'}</p>
-                <p className="text-xs text-gray-400 truncate">{user?.email}</p>
+                <p className="text-sm font-medium text-gray-800 dark:text-gray-100 truncate">{user?.user_metadata?.name || 'User'}</p>
+                <p className="text-xs text-gray-400 dark:text-gray-500 truncate">{user?.email}</p>
               </div>
             </div>
             <button 
@@ -727,7 +835,7 @@ export default function Home() {
         {/* Header */}
         <header className="app-header">
           <div className="flex items-center gap-4">
-            <button onClick={() => setSidebarOpen(true)} className="lg:hidden p-2 hover:bg-gray-100 rounded-xl transition-colors">
+            <button onClick={() => setSidebarOpen(true)} className="lg:hidden p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-xl transition-colors text-gray-600 dark:text-gray-400">
               <Icons.Menu />
             </button>
             <div className="flex-1" />
@@ -736,6 +844,14 @@ export default function Home() {
                 {CATEGORY_INFO[currentQuestion.category]?.name}
               </span>
             )}
+            {/* Settings Button */}
+            <button 
+              onClick={() => setSettingsOpen(true)} 
+              className="btn-icon"
+              title="Settings"
+            >
+              <Icons.Settings />
+            </button>
           </div>
         </header>
 
@@ -744,8 +860,8 @@ export default function Home() {
           {currentView === 'dashboard' && (
             <div className="space-y-6 sm:space-y-8 animate-fadeIn">
               <div>
-                <h2 className="text-2xl sm:text-3xl font-bold text-gray-800">Welcome back! 👋</h2>
-                <p className="text-gray-500 mt-1">Continue your exam preparation</p>
+                <h2 className="text-2xl sm:text-3xl font-bold text-gray-800 dark:text-gray-100">Welcome back! 👋</h2>
+                <p className="text-gray-500 dark:text-gray-400 mt-1">Continue your exam preparation</p>
               </div>
               
               <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
